@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Fantasy League 2026/27</title>
+<style>
+:root{--bg:#070b16;--card:#101827;--card2:#151f33;--line:#27324a;--text:#f7f9fc;--muted:#9ca9bf;--a:#8b5cf6;--b:#22d3ee;--good:#39d98a;--gold:#f5c451}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#1c1743 0,#070b16 43%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1160px;margin:auto;padding:28px 18px 60px}.hero{padding:25px 0 20px}.ey{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--b);text-transform:uppercase}h1{font-size:clamp(36px,7vw,64px);line-height:1;margin:9px 0}.muted{color:var(--muted)}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#0d1423;padding:7px 10px;border-radius:999px}
+.grid{display:grid;grid-template-columns:1.5fr .7fr;gap:16px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:linear-gradient(180deg,var(--card),#0d1422);border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 12px 32px #0004}.card h2{margin:0 0 14px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}th{font-size:11px;color:var(--muted);text-transform:uppercase}.big{font-size:24px;font-weight:900}.rank{font-weight:900}.ai{font-weight:800}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.tab{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px}.tab.on{background:var(--a);border-color:var(--a)}.hidden{display:none}.live{color:var(--good);font-weight:800}.notice{background:#0c1627;border-left:3px solid var(--b);padding:12px 14px;border-radius:9px}.playergrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.player{background:var(--card2);padding:9px;border-radius:9px}.pts{float:right;font-weight:900}.small{font-size:12px;color:var(--muted)}footer{margin-top:22px;color:var(--muted);font-size:12px}
+@media(max-width:850px){.grid,.cards{grid-template-columns:1fr}.playergrid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<header class="hero"><div class="ey">2026/27 · AI analyst competition</div><h1>AI Fantasy League</h1>
+<p class="muted">GPT-5.6 Luna vs Gemini vs Meta AI vs Grok. Scores are taken from the official Fantasy Premier League player data.</p>
+<div class="chips"><span class="chip">🔒 GW1 locked</span><span class="chip">📡 Automatic FPL data</span><span class="chip">🏆 Live leaderboard</span></div></header>
+<div class="grid"><section class="card"><h2>🏆 Overall Leaderboard</h2><table><thead><tr><th>#</th><th>AI</th><th>GW1</th><th>Total</th></tr></thead><tbody id="lb"></tbody></table></section>
+<section class="card"><h2>📡 Data status</h2><div class="notice"><span class="live">● AUTOMATED</span><br><span id="status">Loading latest FPL data…</span></div><p class="small">The updater waits for the relevant Gameweek data to be final/checked before publishing a result.</p></section></div>
+<section><h2>👥 Managers</h2><div class="cards" id="cards"></div></section>
+<section class="card" style="margin-top:16px"><h2>📅 Gameweek Centre</h2><div class="tabs" id="tabs"></div><div id="gw"></div></section>
+<footer>Fan-made AI competition. FPL data source: official Fantasy Premier League endpoints. This page does not represent the Premier League.</footer>
+</div>
+<script>
+let D=null;
+async function load(){const r=await fetch('data/results.json?x='+Date.now());D=await r.json();render()}
+function render(){
+ const rows=[...D.leaderboard].sort((a,b)=>b.total-a.total);
+ document.getElementById('lb').innerHTML=rows.map((x,i)=>`<tr><td class="rank">${i+1}</td><td class="ai">${x.icon} ${x.name}</td><td>${x.gw1??'—'}</td><td class="big">${x.total}</td></tr>`).join('');
+ document.getElementById('status').textContent=D.status+' · Last update: '+new Date(D.updated_at).toLocaleString();
+ document.getElementById('cards').innerHTML=D.leaderboard.map(x=>`<div class="card"><div style="font-size:28px">${x.icon}</div><b>${x.name}</b><div class="small">${x.formation} · C: ${x.captain}</div><div class="big" style="margin-top:12px">${x.total}<span class="small"> pts</span></div></div>`).join('');
+ const gws=Object.keys(D.gameweeks).sort((a,b)=>+a-+b);
+ document.getElementById('tabs').innerHTML=gws.map((g,i)=>`<button class="tab ${i===gws.length-1?'on':''}" onclick="gw(${g},this)">GW${g}</button>`).join('');
+ gw(+gws[gws.length-1],document.querySelector('.tab:last-child'));
+}
+function gw(n,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));btn.classList.add('on');const g=D.gameweeks[n];document.getElementById('gw').innerHTML=`<div class="notice">${g.status}</div><h3>GW${n} scores</h3><table><thead><tr><th>AI</th><th>Points</th><th>Captain</th></tr></thead><tbody>${g.scores.map(x=>`<tr><td>${x.icon} ${x.name}</td><td class="big">${x.points}</td><td>${x.captain}</td></tr>`).join('')}</tbody></table>`}
+load().catch(e=>document.getElementById('status').textContent='Waiting for first published result.');
+</script></body></html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Fantasy League — 2026/27</title>
+<meta name="description" content="AI Fantasy League 2026/27 — GPT, Gemini, Meta AI and Grok.">
+<style>
+:root{--bg:#070b16;--panel:#101728;--panel2:#151e31;--text:#f5f7fb;--muted:#9aa6bd;--line:#26314a;--accent:#8b5cf6;--accent2:#22d3ee;--good:#35d07f;--gold:#f5c451}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,#1a1740 0,#070b16 42%);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.container{max-width:1180px;margin:auto;padding:28px 18px 60px}.hero{padding:36px 0 24px}.eyebrow{color:var(--accent2);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+h1{font-size:clamp(34px,7vw,64px);line-height:1;margin:10px 0}.sub{color:var(--muted);max-width:720px;font-size:16px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.badge{border:1px solid var(--line);background:#0d1423;padding:7px 11px;border-radius:999px;color:#cbd5e1}
+.grid{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}.card{background:linear-gradient(180deg,var(--panel),#0d1422);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 35px #0004}
+.card h2{margin:0 0 14px;font-size:19px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:left}.table th{color:var(--muted);font-size:12px;text-transform:uppercase}.rank{font-weight:900}.ai{font-weight:800}.points{font-size:20px;font-weight:900}
+.pill{display:inline-block;padding:4px 8px;border-radius:8px;background:#202b43;color:#dbe7ff;font-size:12px}.live{color:var(--good);font-weight:800}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.ai-card{min-height:155px}.logo{font-size:28px}.name{font-weight:900;margin:5px 0}.small{color:var(--muted);font-size:13px}
+.tabs{display:flex;gap:8px;overflow:auto;margin:20px 0}.tab{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 13px;border-radius:10px;cursor:pointer}.tab.active{background:var(--accent);border-color:var(--accent)}
+.section{margin-top:16px}.notice{padding:13px 15px;border-left:3px solid var(--accent2);background:#0c1626;border-radius:10px;color:#c9d4e7}
+footer{margin-top:28px;color:var(--muted);font-size:12px}.hidden{display:none}
+@media(max-width:850px){.grid,.cards{grid-template-columns:1fr}.table{font-size:13px}.table th:nth-child(4),.table td:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="hero">
+<div class="eyebrow">2026/27 Season · Official Competition Hub</div>
+<h1>AI Fantasy League</h1>
+<p class="sub">Four AI football analysts. One FPL season. Every Gameweek counts. Scores are calculated from the official Fantasy Premier League player points.</p>
+<div class="badges"><span class="badge">🤖 GPT-5.6 Luna</span><span class="badge">♊ Gemini</span><span class="badge">🧠 Meta AI</span><span class="badge">🟣 Grok</span></div>
+</header>
+
+<div class="grid">
+<section class="card">
+<h2>🏆 Overall Leaderboard</h2>
+<table class="table">
+<thead><tr><th>#</th><th>AI</th><th>GW1</th><th>Total</th></tr></thead>
+<tbody id="leaderboard"></tbody>
+</table>
+</section>
+<section class="card">
+<h2>📌 Competition Status</h2>
+<div class="notice"><span class="live">● LIVE SEASON</span><br>GW1 data will be entered after the official FPL player points are final.</div>
+<p class="small">Scoring rule: use the real official FPL points for each player, then apply the submitted XI, captain, vice-captain and valid automatic substitutions. No invented scoring.</p>
+</section>
+</div>
+
+<div class="section">
+<h2>👥 The Four Managers</h2>
+<div class="cards" id="aiCards"></div>
+</div>
+
+<div class="section card">
+<h2>📋 Gameweek Centre</h2>
+<div class="tabs">
+<button class="tab active" onclick="showTab('gw1',this)">GW1</button>
+<button class="tab" onclick="showTab('rules',this)">Rules</button>
+<button class="tab" onclick="showTab('history',this)">History</button>
+</div>
+<div id="gw1">
+<div class="notice">🔒 GW1 squads are locked. Official points: <strong>pending final data entry</strong>.</div>
+</div>
+<div id="rules" class="hidden">
+<ul>
+<li>Standard FPL squad and transfer rules apply.</li>
+<li>Each AI's submitted squad is locked at the Gameweek deadline.</li>
+<li>Official FPL player points are the sole scoring source.</li>
+<li>Captain and vice-captain choices are taken exactly as submitted.</li>
+<li>Valid automatic substitutions follow the official FPL rules.</li>
+<li>No AI's self-reported score is accepted as authoritative.</li>
+</ul>
+</div>
+<div id="history" class="hidden">
+<p class="small">Season history will populate after each completed Gameweek.</p>
+</div>
+</div>
+
+<div class="section card">
+<h2>⚔️ GW1 Matchup Watch</h2>
+<table class="table">
+<tr><th>AI</th><th>Formation</th><th>Captain</th><th>Vice</th></tr>
+<tr><td>🤖 GPT-5.6 Luna</td><td>3-5-2</td><td>Haaland</td><td>Bruno</td></tr>
+<tr><td>♊ Gemini</td><td>3-5-2</td><td>Haaland</td><td>Bruno</td></tr>
+<tr><td>🧠 Meta AI</td><td>3-4-3</td><td>Bruno</td><td>Haaland</td></tr>
+<tr><td>🟣 Grok</td><td>3-5-2</td><td>Haaland</td><td>Bruno</td></tr>
+</table>
+</div>
+
+<footer>
+Unofficial fan-made competition page. Fantasy Premier League is operated by the Premier League. For official FPL data and rules, use the official FPL website.
+</footer>
+</div>
+
+<script>
+const data=[
+ {rank:'—',icon:'🤖',name:'GPT-5.6 Luna',gw1:'—',total:0,form:'3-5-2',cap:'Haaland'},
+ {rank:'—',icon:'♊',name:'Gemini',gw1:'—',total:0,form:'3-5-2',cap:'Haaland'},
+ {rank:'—',icon:'🧠',name:'Meta AI',gw1:'—',total:0,form:'3-4-3',cap:'Bruno Fernandes'},
+ {rank:'—',icon:'🟣',name:'Grok',gw1:'—',total:0,form:'3-5-2',cap:'Haaland'}
+];
+function render(){
+ document.getElementById('leaderboard').innerHTML=data.map(x=>`<tr><td class="rank">${x.rank}</td><td class="ai">${x.icon} ${x.name}</td><td>${x.gw1}</td><td class="points">${x.total}</td></tr>`).join('');
+ document.getElementById('aiCards').innerHTML=data.map(x=>`<div class="card ai-card"><div class="logo">${x.icon}</div><div class="name">${x.name}</div><div class="small">${x.form} · Captain: ${x.cap}</div><div class="points" style="margin-top:14px">${x.total} <span class="small">season pts</span></div></div>`).join('');
+}
+function showTab(id,btn){
+ ['gw1','rules','history'].forEach(x=>document.getElementById(x).classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
+}
+render();
+</script>
+</body>
+</html>
