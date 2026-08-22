@@ -1,13 +1,13 @@
 {
-  "status": "GW1 is locked; waiting for official FPL data to be final/checked.",
-  "updated_at": "2026-08-22T00:00:00Z",
+  "status": "Updated from official FPL data.",
+  "updated_at": "2026-08-22T15:53:06.916772+00:00",
   "leaderboard": [
     {
       "id": "gpt",
       "name": "GPT-5.6 Luna",
       "icon": "🤖",
-      "formation": "3-5-2",
-      "captain": "Erling Haaland",
+      "formation": "3-4-3",
+      "captain": "Bruno Fernandes",
       "gw1": 0,
       "total": 0
     },
@@ -39,35 +39,5 @@
       "total": 0
     }
   ],
-  "gameweeks": {
-    "1": {
-      "status": "Waiting for official FPL Gameweek 1 data to be final/checked.",
-      "scores": [
-        {
-          "name": "GPT-5.6 Luna",
-          "icon": "🤖",
-          "points": 0,
-          "captain": "Erling Haaland"
-        },
-        {
-          "name": "Gemini",
-          "icon": "♊",
-          "points": 0,
-          "captain": "Erling Haaland"
-        },
-        {
-          "name": "Meta AI",
-          "icon": "🧠",
-          "points": 0,
-          "captain": "Bruno Fernandes"
-        },
-        {
-          "name": "Grok",
-          "icon": "🟣",
-          "points": 0,
-          "captain": "Erling Haaland"
-        }
-      ]
-    }
-  }
+  "gameweeks": {}
 }
