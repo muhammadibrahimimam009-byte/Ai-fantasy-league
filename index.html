@@ -1,35 +1,157 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Fantasy League 2026/27</title>
-<style>
-:root{--bg:#070b16;--card:#101827;--card2:#151f33;--line:#27324a;--text:#f7f9fc;--muted:#9ca9bf;--a:#8b5cf6;--b:#22d3ee;--good:#39d98a;--gold:#f5c451}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#1c1743 0,#070b16 43%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
-.wrap{max-width:1160px;margin:auto;padding:28px 18px 60px}.hero{padding:25px 0 20px}.ey{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--b);text-transform:uppercase}h1{font-size:clamp(36px,7vw,64px);line-height:1;margin:9px 0}.muted{color:var(--muted)}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#0d1423;padding:7px 10px;border-radius:999px}
-.grid{display:grid;grid-template-columns:1.5fr .7fr;gap:16px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:linear-gradient(180deg,var(--card),#0d1422);border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 12px 32px #0004}.card h2{margin:0 0 14px}
-table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}th{font-size:11px;color:var(--muted);text-transform:uppercase}.big{font-size:24px;font-weight:900}.rank{font-weight:900}.ai{font-weight:800}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.tab{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px}.tab.on{background:var(--a);border-color:var(--a)}.hidden{display:none}.live{color:var(--good);font-weight:800}.notice{background:#0c1627;border-left:3px solid var(--b);padding:12px 14px;border-radius:9px}.playergrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.player{background:var(--card2);padding:9px;border-radius:9px}.pts{float:right;font-weight:900}.small{font-size:12px;color:var(--muted)}footer{margin-top:22px;color:var(--muted);font-size:12px}
-@media(max-width:850px){.grid,.cards{grid-template-columns:1fr}.playergrid{grid-template-columns:1fr}}
-</style></head><body><div class="wrap">
-<header class="hero"><div class="ey">2026/27 · AI analyst competition</div><h1>AI Fantasy League</h1>
-<p class="muted">GPT-5.6 Luna vs Gemini vs Meta AI vs Grok. Scores are taken from the official Fantasy Premier League player data.</p>
-<div class="chips"><span class="chip">🔒 GW1 locked</span><span class="chip">📡 Automatic FPL data</span><span class="chip">🏆 Live leaderboard</span></div></header>
-<div class="grid"><section class="card"><h2>🏆 Overall Leaderboard</h2><table><thead><tr><th>#</th><th>AI</th><th>GW1</th><th>Total</th></tr></thead><tbody id="lb"></tbody></table></section>
-<section class="card"><h2>📡 Data status</h2><div class="notice"><span class="live">● AUTOMATED</span><br><span id="status">Loading latest FPL data…</span></div><p class="small">The updater waits for the relevant Gameweek data to be final/checked before publishing a result.</p></section></div>
-<section><h2>👥 Managers</h2><div class="cards" id="cards"></div></section>
-<section class="card" style="margin-top:16px"><h2>📅 Gameweek Centre</h2><div class="tabs" id="tabs"></div><div id="gw"></div></section>
-<footer>Fan-made AI competition. FPL data source: official Fantasy Premier League endpoints. This page does not represent the Premier League.</footer>
-</div>
-<script>
-let D=null;
-async function load(){const r=await fetch('data/results.json?x='+Date.now());D=await r.json();render()}
-function render(){
- const rows=[...D.leaderboard].sort((a,b)=>b.total-a.total);
- document.getElementById('lb').innerHTML=rows.map((x,i)=>`<tr><td class="rank">${i+1}</td><td class="ai">${x.icon} ${x.name}</td><td>${x.gw1??'—'}</td><td class="big">${x.total}</td></tr>`).join('');
- document.getElementById('status').textContent=D.status+' · Last update: '+new Date(D.updated_at).toLocaleString();
- document.getElementById('cards').innerHTML=D.leaderboard.map(x=>`<div class="card"><div style="font-size:28px">${x.icon}</div><b>${x.name}</b><div class="small">${x.formation} · C: ${x.captain}</div><div class="big" style="margin-top:12px">${x.total}<span class="small"> pts</span></div></div>`).join('');
- const gws=Object.keys(D.gameweeks).sort((a,b)=>+a-+b);
- document.getElementById('tabs').innerHTML=gws.map((g,i)=>`<button class="tab ${i===gws.length-1?'on':''}" onclick="gw(${g},this)">GW${g}</button>`).join('');
- gw(+gws[gws.length-1],document.querySelector('.tab:last-child'));
-}
-function gw(n,btn){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));btn.classList.add('on');const g=D.gameweeks[n];document.getElementById('gw').innerHTML=`<div class="notice">${g.status}</div><h3>GW${n} scores</h3><table><thead><tr><th>AI</th><th>Points</th><th>Captain</th></tr></thead><tbody>${g.scores.map(x=>`<tr><td>${x.icon} ${x.name}</td><td class="big">${x.points}</td><td>${x.captain}</td></tr>`).join('')}</tbody></table>`}
-load().catch(e=>document.getElementById('status').textContent='Waiting for first published result.');
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fantasy League — Live Standings & Squads</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-gold: #eab308;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success-color: #22c55e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 24px 16px; line-height: 1.5; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 32px; }
+        header h1 { font-size: 2.2rem; color: var(--accent-blue); margin-bottom: 8px; }
+        header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .section-title { font-size: 1.4rem; margin-bottom: 16px; margin-top: 32px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 24px; padding: 16px; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #162032; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Squad Grid Layout */
+        .managers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .manager-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+        .manager-header { font-weight: 700; font-size: 1.1rem; color: var(--accent-blue); margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .manager-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+
+        .squad-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-gold); margin-top: 10px; margin-bottom: 6px; font-weight: 700; }
+        .player-row { display: flex; justify-content: space-between; padding: 4px 8px; background: #182234; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; }
+        .pos-badge { font-size: 0.7rem; font-weight: bold; color: var(--accent-blue); width: 32px; display: inline-block; }
+        .bench-row { opacity: 0.75; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🏆 AI Fantasy League</h1>
+            <p>Official 2026/27 Automated Scoring Dashboard</p>
+        </header>
+
+        <!-- Leaderboard -->
+        <h2 class="section-title">📊 Overall Standings</h2>
+        <div class="card" style="padding: 0;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>AI Manager</th>
+                        <th>Formation</th>
+                        <th>Captain</th>
+                        <th>GW1 Score</th>
+                        <th>Total Points</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-rows">
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading live results...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Full Squad Inspector -->
+        <h2 class="section-title">👥 All Manager Lineups</h2>
+        <div class="managers-grid" id="squads-container">
+            <div style="color: var(--text-muted);">Loading squad lists...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadLeagueData() {
+            try {
+                // Fetch squads and live results from repository data folder
+                const [squadsRes, resultsRes] = await Promise.all([
+                    fetch('data/squads.json'),
+                    fetch('data/results.json')
+                ]);
+
+                const squads = await squadsRes.json();
+                const results = await resultsRes.json();
+
+                // Render Leaderboard
+                const leaderboardTable = document.getElementById('leaderboard-rows');
+                leaderboardTable.innerHTML = '';
+                results.leaderboard.forEach(item => {
+                    leaderboardTable.innerHTML += `
+                        <tr>
+                            <td><strong>${item.icon} ${item.name}</strong></td>
+                            <td>${item.formation}</td>
+                            <td>${item.captain}</td>
+                            <td style="color: var(--success-color); font-weight: bold;">${item.gw1}</td>
+                            <td style="color: var(--success-color); font-weight: bold; font-size: 1.1rem;">${item.total}</td>
+                        </tr>
+                    `;
+                });
+
+                // Render Full Squads for Every AI
+                const squadsContainer = document.getElementById('squads-container');
+                squadsContainer.innerHTML = '';
+
+                Object.keys(squads).forEach(key => {
+                    const manager = squads[key];
+                    
+                    let startingHtml = '';
+                    manager.starting.forEach(([name, pos]) => {
+                        let tag = name === manager.captain ? ' 👑 (C)' : (name === manager.vice ? ' ⭐ (VC)' : '');
+                        startingHtml += `
+                            <div class="player-row">
+                                <span><span class="pos-badge">${pos}</span> ${name}${tag}</span>
+                            </div>
+                        `;
+                    });
+
+                    let benchHtml = '';
+                    manager.bench.forEach(([name, pos]) => {
+                        benchHtml += `
+                            <div class="player-row bench-row">
+                                <span><span class="pos-badge" style="color: var(--text-muted);">${pos}</span> ${name}</span>
+                            </div>
+                        `;
+                    });
+
+                    squadsContainer.innerHTML += `
+                        <div class="manager-card">
+                            <div class="manager-header">
+                                <span>${manager.icon} ${manager.name}</span>
+                            </div>
+                            <div class="manager-meta">Formation: ${manager.formation}</div>
+                            
+                            <div class="squad-title">Starting XI</div>
+                            ${startingHtml}
+
+                            <div class="squad-title">Bench</div>
+                            ${benchHtml}
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+                console.error("Error loading data:", err);
+            }
+        }
+
+        loadLeagueData();
+    </script>
+</body>
+</html>
