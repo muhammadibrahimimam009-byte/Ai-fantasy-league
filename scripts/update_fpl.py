@@ -10,11 +10,9 @@ from difflib import SequenceMatcher
 BASE_URL = "https://fantasy.premierleague.com/api/"
 ROOT = Path(__file__).resolve().parents[1]
 
-GAMEWEEK = 1
-
 
 # ============================================================
-# FPL API
+# FPL API & GAMEWEEK DETECTION
 # ============================================================
 
 def get_api(path):
@@ -33,6 +31,27 @@ def get_api(path):
 
     with urlopen(request, timeout=30) as response:
         return json.load(response)
+
+
+def get_current_gameweek():
+    """Dynamically detects the current active Gameweek from FPL API."""
+    try:
+        bootstrap = get_api("bootstrap-static/")
+        events = bootstrap.get("events", [])
+        for event in events:
+            if event.get("is_current"):
+                return event["id"]
+            if event.get("is_next"):
+                return max(1, event["id"] - 1)
+        for event in events:
+            if event.get("finished"):
+                return event["id"]
+    except Exception:
+        pass
+    return 1
+
+
+GAMEWEEK = get_current_gameweek()
 
 
 # ============================================================
@@ -455,7 +474,7 @@ def calculate_team(team, players, live):
 def main():
     print("\n==============================================")
     print("          AI FANTASY LEAGUE")
-    print("          GW1 OFFICIAL FPL UPDATE")
+    print(f"          GW{GAMEWEEK} OFFICIAL FPL UPDATE")
     print("==============================================\n")
 
     print("Downloading official FPL data...")
@@ -490,7 +509,7 @@ def main():
 
         result = calculate_team(team, players, live)
 
-        print(f"\nFINAL GW1 SCORE: {result['points']}")
+        print(f"\nFINAL GW{GAMEWEEK} SCORE: {result['points']}")
 
         results.append({
             "id": manager_id,
@@ -525,8 +544,8 @@ def main():
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "leaderboard": leaderboard,
         "gameweeks": {
-            "1": {
-                "status": "Official FPL GW1 data.",
+            str(GAMEWEEK): {
+                "status": f"Official FPL GW{GAMEWEEK} data.",
                 "scores": results
             }
         }
@@ -536,7 +555,7 @@ def main():
         json.dump(results_data, file, indent=2, ensure_ascii=False)
 
     print("\n==============================================")
-    print("          FINAL GW1 LEADERBOARD")
+    print(f"          FINAL GW{GAMEWEEK} LEADERBOARD")
     print("==============================================")
     for position, team in enumerate(leaderboard, 1):
         print(f"{position}. {team['icon']} {team['name']} — {team['gw1']} pts")
