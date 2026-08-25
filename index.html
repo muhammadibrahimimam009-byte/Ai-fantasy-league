@@ -21,7 +21,7 @@
         body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px 14px; line-height: 1.5; }
         .container { max-width: 800px; margin: 0 auto; }
 
-        /* Header & Pills */
+        /* Header & Badges */
         header { margin-bottom: 24px; }
         .sub-header { font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
         h1 { font-size: 2rem; font-weight: 800; color: #ffffff; margin-bottom: 6px; }
@@ -34,7 +34,7 @@
         .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); }
         .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; color: #ffffff; }
 
-        /* Table */
+        /* Leaderboard Table */
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 1px solid var(--card-border); }
@@ -57,6 +57,8 @@
         .squad-group-title { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-yellow); margin: 10px 0 6px 0; }
         .player-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); padding: 6px 10px; border-radius: 6px; margin-bottom: 4px; font-size: 0.82rem; }
         .pos-tag { font-size: 0.68rem; font-weight: 800; color: var(--accent-cyan); background: rgba(56, 189, 248, 0.1); padding: 2px 6px; border-radius: 4px; display: inline-block; width: 34px; text-align: center; margin-right: 6px; }
+        .player-pts { font-weight: 700; color: var(--success-green); }
+        .player-mins { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; }
         .bench-row { opacity: 0.65; }
 
         /* Gameweek Centre */
@@ -109,7 +111,7 @@
             <div class="status-text" id="status-timestamp" style="font-size: 0.75rem; margin-top: 4px;">Last update: --</div>
         </div>
 
-        <!-- Managers Card (Full Squads) -->
+        <!-- Managers Card (Full Squads + Scores) -->
         <div class="card">
             <div class="card-title">👥 Managers</div>
             <div id="managers-container">
@@ -133,9 +135,11 @@
     <script>
         async function initDashboard() {
             try {
+                // Cache buster ensures the browser never serves cached 0-point files
+                const cacheBuster = new Date().getTime();
                 const [squadsRes, resultsRes] = await Promise.all([
-                    fetch('data/squads.json'),
-                    fetch('data/results.json')
+                    fetch(`data/squads.json?v=${cacheBuster}`),
+                    fetch(`data/results.json?v=${cacheBuster}`)
                 ]);
 
                 const squads = await squadsRes.json();
@@ -162,22 +166,33 @@
                     document.getElementById('status-timestamp').innerText = `Last update: ${formattedDate}`;
                 }
 
-                // 3. Update Managers Section with FULL Squads
+                // 3. Update Managers Section with Full Player Points & Minutes Breakdown
                 const managersContainer = document.getElementById('managers-container');
                 managersContainer.innerHTML = '';
 
+                const gw1Scores = results.gameweeks && results.gameweeks["1"] ? results.gameweeks["1"].scores : [];
+
                 Object.keys(squads).forEach(key => {
                     const team = squads[key];
-                    
-                    // Match manager score from results
-                    const managerResult = results.leaderboard.find(m => m.id === key) || { total: 0 };
+                    const managerResult = gw1Scores.find(m => m.id === key) || {};
+                    const totalPoints = managerResult.points !== undefined ? managerResult.points : (squads[key].total || 0);
+                    const activeCaptain = managerResult.captain_activated || team.captain;
+                    const resultPlayers = managerResult.players || [];
 
                     let startingRows = '';
                     team.starting.forEach(([name, pos]) => {
                         let badge = name === team.captain ? ' 👑 (C)' : (name === team.vice ? ' ⭐ (VC)' : '');
+                        
+                        // Look up individual player stats from results.json
+                        const stats = resultPlayers.find(p => p.name.toLowerCase() === name.toLowerCase()) || { points: 0, minutes: 0 };
+                        
                         startingRows += `
                             <div class="player-row">
                                 <span><span class="pos-tag">${pos}</span> ${name}${badge}</span>
+                                <div>
+                                    <span class="player-pts">${stats.points} pts</span>
+                                    <span class="player-mins">(${stats.minutes}m)</span>
+                                </div>
                             </div>
                         `;
                     });
@@ -187,6 +202,9 @@
                         benchRows += `
                             <div class="player-row bench-row">
                                 <span><span class="pos-tag" style="color: var(--text-muted); background: rgba(255,255,255,0.05);">${pos}</span> ${name}</span>
+                                <div>
+                                    <span style="color: var(--text-muted); font-weight: 600;">-</span>
+                                </div>
                             </div>
                         `;
                     });
@@ -195,9 +213,9 @@
                         <div class="manager-card">
                             <div class="manager-header">
                                 <span class="manager-name">${team.icon} ${team.name}</span>
-                                <span class="manager-score">${managerResult.total} pts</span>
+                                <span class="manager-score">${totalPoints} pts</span>
                             </div>
-                            <div class="manager-meta">${team.formation} · C: ${team.captain}</div>
+                            <div class="manager-meta">${team.formation} · Active C: ${activeCaptain}</div>
                             
                             <div class="squad-group-title">Starting XI</div>
                             ${startingRows}
@@ -212,7 +230,7 @@
                 const gwContainer = document.getElementById('gw-scores-container');
                 gwContainer.innerHTML = '';
                 
-                const gw1Data = results.gameweeks && results.gameweeks["1"] ? results.gameweeks["1"].scores : results.leaderboard;
+                const gw1Data = gw1Scores.length ? gw1Scores : results.leaderboard;
 
                 gw1Data.forEach(item => {
                     gwContainer.innerHTML += `
