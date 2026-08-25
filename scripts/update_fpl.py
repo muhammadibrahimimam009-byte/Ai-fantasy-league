@@ -102,7 +102,7 @@ def find_player(players, name):
         "dominikszoboszlai": "szoboszlai",
         "kristofferajer": "ajer",
         "daraoshea": "oshea",
-        "brunofrenandes": "fernandes",
+        "brunofernandes": "fernandes",
         "bryanmbeumo": "mbeumo",
         "carlosbaleba": "baleba",
         "erlinghaaland": "haaland",
