@@ -4,10 +4,13 @@ import unicodedata
 from pathlib import Path
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 
 
 BASE_URL = "https://fantasy.premierleague.com/api/"
 ROOT = Path(__file__).resolve().parents[1]
+
+GAMEWEEK = 1
 
 
 # ============================================================
@@ -15,11 +18,17 @@ ROOT = Path(__file__).resolve().parents[1]
 # ============================================================
 
 def get_api(path):
+    url = BASE_URL + path
+
     request = Request(
-        BASE_URL + path,
+        url,
         headers={
-            "User-Agent": "Mozilla/5.0"
-        }
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 Chrome/120 Safari/537.36"
+            ),
+            "Accept": "application/json",
+        },
     )
 
     with urlopen(request, timeout=30) as response:
@@ -30,194 +39,437 @@ def get_api(path):
 # NAME NORMALISATION
 # ============================================================
 
-def normalise(name):
+def normalise(value):
     """
-    Makes names easier to compare.
+    Convert a name into a comparison-friendly form.
 
-    Example:
-        João Pedro -> joaopedro
-        Sangaré -> sangare
-        Groß -> gross
+    Examples:
+
+        João Pedro       -> joaopedro
+        Joao Pedro       -> joaopedro
+        Pascal Groß      -> pascalgross
+        Pascal Gross     -> pascalgross
+        Dara O'Shea      -> daraoshea
+        Dara O’Shea      -> daraoshea
     """
 
-    name = unicodedata.normalize(
+    if value is None:
+        return ""
+
+    value = str(value)
+
+    value = unicodedata.normalize(
         "NFKD",
-        name
+        value
     )
 
-    name = name.encode(
-        "ascii",
-        "ignore"
-    ).decode()
+    value = "".join(
+        char
+        for char in value
+        if not unicodedata.combining(char)
+    )
+
+    value = value.lower()
 
     return re.sub(
         r"[^a-z0-9]",
         "",
-        name.lower()
+        value
     )
+
+
+def name_tokens(value):
+    """
+    Return normalized individual name parts.
+    """
+
+    if value is None:
+        return []
+
+    value = unicodedata.normalize(
+        "NFKD",
+        str(value)
+    )
+
+    value = "".join(
+        char
+        for char in value
+        if not unicodedata.combining(char)
+    )
+
+    value = value.lower()
+
+    return re.findall(
+        r"[a-z0-9]+",
+        value
+    )
+
+
+# ============================================================
+# POSITION CONVERSION
+# ============================================================
+
+POSITION_MAP = {
+    1: "GK",
+    2: "DEF",
+    3: "MID",
+    4: "FWD",
+}
+
+
+def fpl_position(player):
+    return POSITION_MAP.get(
+        player.get("element_type")
+    )
+
+
+# ============================================================
+# PLAYER DESCRIPTION
+# ============================================================
+
+def player_full_name(player):
+    return (
+        str(player.get("first_name", "")).strip()
+        + " "
+        + str(player.get("second_name", "")).strip()
+    ).strip()
+
+
+def player_names(player):
+    """
+    Generate all useful names for an official FPL player.
+    """
+
+    first = str(
+        player.get("first_name", "")
+    ).strip()
+
+    second = str(
+        player.get("second_name", "")
+    ).strip()
+
+    web = str(
+        player.get("web_name", "")
+    ).strip()
+
+    names = set()
+
+    if first:
+        names.add(first)
+
+    if second:
+        names.add(second)
+
+    if first and second:
+        names.add(first + " " + second)
+
+    if web:
+        names.add(web)
+
+    return names
 
 
 # ============================================================
 # PLAYER LOOKUP
 # ============================================================
 
-def find_player(players, name):
+def find_player(players, name, position=None):
     """
-    Match an AI squad name with an official FPL player.
+    Robustly match an AI squad player to the official FPL player.
 
-    Handles differences such as:
+    Matching priority:
 
-        Elliott Anderson -> Anderson
-        Pascal Gross -> Gross / Groß
-        Mamadou Sangare -> Sangaré
-        Joao Pedro -> João Pedro
-        Bruno Fernandes -> Fernandes
+        1. Exact full name
+        2. Exact web_name
+        3. Exact normalized name
+        4. First + last name
+        5. Token matching
+        6. Controlled fuzzy matching
+
+    Position is used whenever possible to prevent
+    duplicate/common names from selecting the wrong player.
     """
 
     target = normalise(name)
 
-    # Known differences between our squad names
-    # and FPL's web_name.
-    aliases = {
-        "elliottanderson": "anderson",
-        "pascalgross": "gross",
-        "mamadousangare": "sangare",
-        "joaopedro": "joaopedro",
-        "cristhianmosquera": "mosquera",
-        "cristianmosquera": "mosquera",
-        "dominicalvertdlewin": "calvertdlewin",
-        "nobelmendy": "mendy",
-        "jeremysarmiento": "sarmiento",
-        "sidikicherif": "cherif",
-        "christostzolis": "tzolis",
-        "jonahkusiasare": "kusiasare",
-        "jacobgreaves": "greaves",
-        "bobbythomas": "thomas",
-        "markflekken": "flekken",
-        "martindubravka": "dubravka",
-        "antoninkinsky": "kinsky",
-        "bartverbruggen": "verbruggen",
-        "riccardocalafiori": "calafiori",
-        "lukeshaw": "shaw",
-        "dominikszoboszlai": "szoboszlai",
-        "kristofferajer": "ajer",
-        "daraoshea": "oshea",
-        "brunofernandes": "fernandes",
-        "bryanmbeumo": "mbeumo",
-        "carlosbaleba": "baleba",
-        "erlinghaaland": "haaland",
-        "harrymaguire": "maguire",
-        "gabriel": "gabriel",
-        "tyrickmitchell": "mitchell",
-    }
+    if not target:
+        raise Exception(
+            "Empty player name supplied."
+        )
 
-    search_name = aliases.get(
-        target,
-        target
-    )
+    candidates = []
 
     # --------------------------------------------------------
-    # 1. Exact official web_name
+    # Build candidate list
     # --------------------------------------------------------
 
     for player in players:
 
-        web_name = normalise(
+        if position:
+            official_position = fpl_position(player)
+
+            if official_position != position:
+                continue
+
+        candidates.append(player)
+
+    # If position filtering produced nothing, search everyone.
+    if not candidates:
+        candidates = list(players)
+
+    # --------------------------------------------------------
+    # 1. Exact normalized full name
+    # --------------------------------------------------------
+
+    for player in candidates:
+
+        full = normalise(
+            player_full_name(player)
+        )
+
+        if target == full:
+            return player
+
+    # --------------------------------------------------------
+    # 2. Exact normalized web name
+    # --------------------------------------------------------
+
+    for player in candidates:
+
+        web = normalise(
             player.get("web_name", "")
         )
 
-        if search_name == web_name:
+        if target == web:
             return player
 
     # --------------------------------------------------------
-    # 2. Exact full name
+    # 3. Exact match against any official name
     # --------------------------------------------------------
 
-    for player in players:
+    for player in candidates:
 
-        full_name = (
-            player.get("first_name", "")
-            + " "
-            + player.get("second_name", "")
-        )
+        for official_name in player_names(player):
 
-        if target == normalise(full_name):
-            return player
-
-    # --------------------------------------------------------
-    # 3. Last-name match
-    # --------------------------------------------------------
-
-    target_words = re.findall(
-        r"[a-z0-9]+",
-        target
-    )
-
-    if target_words:
-
-        last_name = target_words[-1]
-
-        for player in players:
-
-            second_name = normalise(
-                player.get(
-                    "second_name",
-                    ""
-                )
-            )
-
-            web_name = normalise(
-                player.get(
-                    "web_name",
-                    ""
-                )
-            )
-
-            if (
-                last_name == second_name
-                or last_name == web_name
-                or search_name == second_name
-                or search_name == web_name
+            if target == normalise(
+                official_name
             ):
                 return player
 
     # --------------------------------------------------------
-    # 4. Partial match
+    # 4. First + last token matching
     # --------------------------------------------------------
 
-    for player in players:
+    target_parts = name_tokens(name)
 
-        full_name = normalise(
-            player.get("first_name", "")
-            + " "
-            + player.get("second_name", "")
+    if len(target_parts) >= 2:
+
+        first_target = target_parts[0]
+        last_target = target_parts[-1]
+
+        possible = []
+
+        for player in candidates:
+
+            first = normalise(
+                player.get("first_name", "")
+            )
+
+            second = normalise(
+                player.get("second_name", "")
+            )
+
+            web = normalise(
+                player.get("web_name", "")
+            )
+
+            if (
+                first == first_target
+                and (
+                    last_target == second
+                    or last_target == web
+                    or second.endswith(last_target)
+                )
+            ):
+                possible.append(player)
+
+        if len(possible) == 1:
+            return possible[0]
+
+    # --------------------------------------------------------
+    # 5. Token-based matching
+    # --------------------------------------------------------
+
+    scored = []
+
+    for player in candidates:
+
+        official_full = normalise(
+            player_full_name(player)
         )
 
-        web_name = normalise(
+        official_web = normalise(
             player.get("web_name", "")
         )
 
-        if (
-            search_name in full_name
-            or search_name in web_name
-            or target in full_name
-        ):
-            return player
+        score = 0
+
+        if target in official_full:
+            score += 60
+
+        if target in official_web:
+            score += 60
+
+        target_parts = set(
+            name_tokens(name)
+        )
+
+        official_parts = set(
+            name_tokens(
+                player_full_name(player)
+            )
+        )
+
+        if target_parts and official_parts:
+
+            overlap = len(
+                target_parts & official_parts
+            )
+
+            score += overlap * 25
+
+        # Strong last-name match
+        target_tokens = name_tokens(name)
+
+        official_tokens = name_tokens(
+            player_full_name(player)
+        )
+
+        if target_tokens and official_tokens:
+
+            if target_tokens[-1] == official_tokens[-1]:
+                score += 40
+
+        if score > 0:
+            scored.append(
+                (score, player)
+            )
+
+    if scored:
+
+        scored.sort(
+            key=lambda item: item[0],
+            reverse=True
+        )
+
+        best_score = scored[0][0]
+
+        best = [
+            player
+            for score, player in scored
+            if score == best_score
+        ]
+
+        if len(best) == 1:
+            return best[0]
 
     # --------------------------------------------------------
-    # 5. Fail with useful information
+    # 6. Controlled fuzzy matching
     # --------------------------------------------------------
+
+    fuzzy = []
+
+    for player in candidates:
+
+        names_to_check = [
+            normalise(
+                player_full_name(player)
+            ),
+            normalise(
+                player.get(
+                    "web_name",
+                    ""
+                )
+            ),
+        ]
+
+        best_ratio = 0
+
+        for official_name in names_to_check:
+
+            if not official_name:
+                continue
+
+            ratio = SequenceMatcher(
+                None,
+                target,
+                official_name
+            ).ratio()
+
+            best_ratio = max(
+                best_ratio,
+                ratio
+            )
+
+        fuzzy.append(
+            (best_ratio, player)
+        )
+
+    fuzzy.sort(
+        key=lambda item: item[0],
+        reverse=True
+    )
+
+    if fuzzy:
+
+        best_ratio, best_player = fuzzy[0]
+
+        # Only accept a strong fuzzy match.
+        if best_ratio >= 0.82:
+
+            # Make sure another player isn't equally close.
+            if len(fuzzy) == 1:
+
+                return best_player
+
+            second_ratio = fuzzy[1][0]
+
+            if best_ratio - second_ratio >= 0.04:
+                return best_player
+
+    # --------------------------------------------------------
+    # Failure
+    # --------------------------------------------------------
+
+    available = []
+
+    for player in players:
+
+        if position and fpl_position(player) != position:
+            continue
+
+        available.append(
+            player_full_name(player)
+        )
+
+    sample = ", ".join(
+        available[:20]
+    )
 
     raise Exception(
-        "Could not find FPL player: "
-        + name
-        + " | searched as: "
-        + search_name
+        "\nCould not find FPL player: "
+        + str(name)
+        + "\nNormalized as: "
+        + target
+        + "\nRequested position: "
+        + str(position)
+        + "\nExample available players: "
+        + sample
     )
 
 
 # ============================================================
-# FORMATION CHECK
+# VALID FORMATION
 # ============================================================
 
 def valid_formation(lineup):
@@ -251,57 +503,106 @@ def valid_formation(lineup):
 
 
 # ============================================================
-# CALCULATE ONE AI TEAM
+# LOAD PLAYER
 # ============================================================
 
-def calculate_team(team, players, live):
+def load_squad_player(
+    players,
+    live,
+    name,
+    position
+):
+
+    player = find_player(
+        players,
+        name,
+        position
+    )
+
+    stats = live.get(
+        player["id"],
+        {}
+    )
+
+    return {
+        "name": name,
+        "position": position,
+        "official_name": player_full_name(
+            player
+        ),
+        "fpl_id": player["id"],
+        "stats": stats,
+    }
+
+
+# ============================================================
+# CALCULATE ONE TEAM
+# ============================================================
+
+def calculate_team(
+    team,
+    players,
+    live
+):
 
     starting = []
     bench = []
 
+    print(
+        "\nLoading starting XI..."
+    )
+
     # --------------------------------------------------------
-    # Load starting XI
+    # Starting XI
     # --------------------------------------------------------
 
     for name, position in team["starting"]:
 
-        player = find_player(
+        player = load_squad_player(
             players,
-            name
+            live,
+            name,
+            position
         )
 
-        stats = live.get(
-            player["id"],
-            {}
+        starting.append(
+            player
         )
 
-        starting.append({
-            "name": name,
-            "position": position,
-            "stats": stats
-        })
+        print(
+            "  ✓ "
+            + name
+            + " -> "
+            + player["official_name"]
+        )
 
     # --------------------------------------------------------
-    # Load bench
+    # Bench
     # --------------------------------------------------------
+
+    print(
+        "Loading bench..."
+    )
 
     for name, position in team["bench"]:
 
-        player = find_player(
+        player = load_squad_player(
             players,
-            name
+            live,
+            name,
+            position
         )
 
-        stats = live.get(
-            player["id"],
-            {}
+        bench.append(
+            player
         )
 
-        bench.append({
-            "name": name,
-            "position": position,
-            "stats": stats
-        })
+        print(
+            "  ✓ "
+            + name
+            + " -> "
+            + player["official_name"]
+        )
 
     lineup = list(starting)
 
@@ -309,85 +610,110 @@ def calculate_team(team, players, live):
     # AUTOMATIC SUBSTITUTIONS
     # ========================================================
 
+    print(
+        "\nChecking automatic substitutions..."
+    )
+
     # --------------------------------------------------------
     # Goalkeeper
     # --------------------------------------------------------
 
+    starting_gk = lineup[0]
+    bench_gk = bench[0]
+
     if (
-        lineup[0]["stats"].get(
-            "minutes",
-            0
+        int(
+            starting_gk["stats"].get(
+                "minutes",
+                0
+            )
         ) == 0
-        and bench[0]["stats"].get(
-            "minutes",
-            0
+        and int(
+            bench_gk["stats"].get(
+                "minutes",
+                0
+            )
         ) > 0
     ):
 
         print(
             "  GK auto-sub: "
-            + lineup[0]["name"]
+            + starting_gk["name"]
             + " -> "
-            + bench[0]["name"]
+            + bench_gk["name"]
         )
 
-        lineup[0] = bench[0]
+        lineup[0] = bench_gk
 
     # --------------------------------------------------------
-    # Outfield players
+    # Outfield substitutes
     # --------------------------------------------------------
 
     for substitute in bench[1:]:
 
-        # Bench player must have played.
-        if substitute["stats"].get(
-            "minutes",
-            0
-        ) == 0:
+        substitute_minutes = int(
+            substitute["stats"].get(
+                "minutes",
+                0
+            )
+        )
+
+        if substitute_minutes <= 0:
             continue
 
-        # Look for a non-playing starter.
         for index in range(
             1,
             len(lineup)
         ):
 
-            if lineup[index][
-                "stats"
-            ].get(
-                "minutes",
-                0
-            ) > 0:
+            starter = lineup[index]
+
+            starter_minutes = int(
+                starter["stats"].get(
+                    "minutes",
+                    0
+                )
+            )
+
+            if starter_minutes > 0:
                 continue
 
-            test_lineup = list(lineup)
+            test_lineup = list(
+                lineup
+            )
 
-            test_lineup[index] = substitute
+            test_lineup[index] = (
+                substitute
+            )
 
-            # FPL cannot leave an invalid formation.
             if valid_formation(
                 test_lineup
             ):
 
                 print(
                     "  Auto-sub: "
-                    + lineup[index]["name"]
+                    + starter["name"]
                     + " -> "
                     + substitute["name"]
                 )
 
-                lineup[index] = substitute
+                lineup[index] = (
+                    substitute
+                )
+
                 break
 
     # ========================================================
     # PLAYER POINTS
     # ========================================================
 
+    print(
+        "\nStarting XI points:"
+    )
+
     total = 0
 
-    print(
-        "  Starting XI points:"
-    )
+    player_breakdown = []
 
     for player in lineup:
 
@@ -405,49 +731,61 @@ def calculate_team(team, players, live):
             )
         )
 
+        total += points
+
+        player_breakdown.append({
+            "name": player["name"],
+            "position": player["position"],
+            "points": points,
+            "minutes": minutes,
+        })
+
         print(
-            f"    {player['name']}: "
+            f"  {player['name']}: "
             f"{points} pts "
             f"({minutes} min)"
         )
-
-        total += points
 
     # ========================================================
     # CAPTAIN
     # ========================================================
 
+    captain_name = team.get(
+        "captain",
+        ""
+    )
+
+    vice_name = team.get(
+        "vice",
+        ""
+    )
+
     captain = None
-
-    for player in lineup:
-
-        if (
-            player["name"]
-            == team["captain"]
-        ):
-
-            captain = player
-            break
-
-    # ========================================================
-    # VICE CAPTAIN
-    # ========================================================
-
     vice = None
 
     for player in lineup:
 
-        if (
+        if normalise(
             player["name"]
-            == team["vice"]
+        ) == normalise(
+            captain_name
+        ):
+
+            captain = player
+
+        if normalise(
+            player["name"]
+        ) == normalise(
+            vice_name
         ):
 
             vice = player
-            break
 
     # ========================================================
-    # CAPTAIN MULTIPLIER
+    # CAPTAIN BONUS
     # ========================================================
+
+    captain_activated = None
 
     if captain:
 
@@ -465,19 +803,27 @@ def calculate_team(team, players, live):
             )
         )
 
-        # Captain played: double his points.
         if captain_minutes > 0:
 
             total += captain_points
 
+            captain_activated = (
+                captain["name"]
+            )
+
             print(
-                "  Captain bonus: "
+                "\nCaptain: "
                 + captain["name"]
-                + " +"
+                + " — "
+                + str(captain_points)
+                + " pts"
+            )
+
+            print(
+                "Captain bonus: +"
                 + str(captain_points)
             )
 
-        # Captain didn't play: vice gets the multiplier.
         elif vice:
 
             vice_minutes = int(
@@ -498,14 +844,36 @@ def calculate_team(team, players, live):
 
                 total += vice_points
 
+                captain_activated = (
+                    vice["name"]
+                    + " (VC)"
+                )
+
                 print(
-                    "  Vice-captain activated: "
+                    "\nCaptain did not play."
+                )
+
+                print(
+                    "Vice-captain activated: "
                     + vice["name"]
-                    + " +"
+                )
+
+                print(
+                    "Vice-captain bonus: +"
                     + str(vice_points)
                 )
 
-    return total
+    # ========================================================
+    # RETURN RESULT
+    # ========================================================
+
+    return {
+        "points": total,
+        "captain": captain_name,
+        "vice": vice_name,
+        "captain_activated": captain_activated,
+        "players": player_breakdown,
+    }
 
 
 # ============================================================
@@ -516,21 +884,21 @@ def main():
 
     print()
     print(
-        "========================================"
+        "=============================================="
     )
     print(
-        "       AI FANTASY LEAGUE"
+        "          AI FANTASY LEAGUE"
     )
     print(
-        "       GW1 OFFICIAL FPL UPDATE"
+        "          GW1 OFFICIAL FPL UPDATE"
     )
     print(
-        "========================================"
+        "=============================================="
     )
     print()
 
     # ========================================================
-    # DOWNLOAD OFFICIAL FPL DATA
+    # OFFICIAL FPL DATA
     # ========================================================
 
     print(
@@ -541,16 +909,17 @@ def main():
         "bootstrap-static/"
     )
 
-    players = bootstrap[
-        "elements"
-    ]
+    players = bootstrap.get(
+        "elements",
+        []
+    )
 
     print(
         f"Loaded {len(players)} players."
     )
 
     # ========================================================
-    # LOAD LOCKED AI SQUADS
+    # SQUADS
     # ========================================================
 
     squads_file = (
@@ -559,8 +928,16 @@ def main():
         / "squads.json"
     )
 
+    if not squads_file.exists():
+
+        raise Exception(
+            "Could not find squads.json at: "
+            + str(squads_file)
+        )
+
     with open(
         squads_file,
+        "r",
         encoding="utf-8"
     ) as file:
 
@@ -570,26 +947,26 @@ def main():
         f"Loaded {len(squads)} AI squads."
     )
 
+    # ========================================================
+    # LIVE GW DATA
+    # ========================================================
+
     print()
-
-    # ========================================================
-    # GAMEWEEK 1
-    # ========================================================
-
-    gameweek = 1
-
     print(
-        "Downloading official GW1 "
+        f"Downloading official GW{GAMEWEEK} "
         "player points..."
     )
 
     live_data = get_api(
-        f"event/{gameweek}/live/"
+        f"event/{GAMEWEEK}/live/"
     )
 
     live = {
         item["id"]: item["stats"]
-        for item in live_data["elements"]
+        for item in live_data.get(
+            "elements",
+            []
+        )
     }
 
     print(
@@ -600,80 +977,111 @@ def main():
     print()
 
     # ========================================================
-    # CALCULATE EVERY AI
+    # CALCULATE TEAMS
     # ========================================================
 
-    scores = []
+    results = []
 
     for manager_id, team in squads.items():
 
+        print()
         print(
-            "========================================"
+            "=============================================="
         )
 
         print(
-            team["name"]
+            team.get(
+                "name",
+                manager_id
+            )
         )
 
         print(
-            "========================================"
+            "=============================================="
         )
 
-        score = calculate_team(
+        result = calculate_team(
             team,
             players,
             live
         )
 
         print()
-
         print(
             "FINAL GW1 SCORE: "
-            + str(score)
+            + str(result["points"])
         )
 
-        print()
-
-        scores.append({
+        results.append({
             "id": manager_id,
-            "name": team["name"],
-            "icon": team["icon"],
-            "points": score,
-            "captain": team["captain"]
+            "name": team.get(
+                "name",
+                manager_id
+            ),
+            "icon": team.get(
+                "icon",
+                ""
+            ),
+            "formation": team.get(
+                "formation",
+                ""
+            ),
+            "points": result["points"],
+            "captain": team.get(
+                "captain",
+                ""
+            ),
+            "vice": team.get(
+                "vice",
+                ""
+            ),
+            "captain_activated": result[
+                "captain_activated"
+            ],
+            "players": result[
+                "players"
+            ],
         })
 
     # ========================================================
-    # SORT LEADERBOARD
+    # SORT
     # ========================================================
 
-    scores.sort(
+    results.sort(
         key=lambda x: x["points"],
         reverse=True
     )
 
+    # ========================================================
+    # LEADERBOARD
+    # ========================================================
+
     leaderboard = []
 
-    for result in scores:
-
-        team = squads[
-            result["id"]
-        ]
+    for result in results:
 
         leaderboard.append({
             "id": result["id"],
             "name": result["name"],
             "icon": result["icon"],
-            "formation": team["formation"],
-            "captain": team["captain"],
+            "formation": result["formation"],
+            "captain": result["captain"],
+            "vice": result["vice"],
             "gw1": result["points"],
-            "total": result["points"]
+            "total": result["points"],
         })
 
     # ========================================================
-    # CREATE RESULTS.JSON
+    # RESULTS JSON
     # ========================================================
 
-    results = {
+    output = (
+        ROOT
+        / "data"
+        / "results.json"
+    )
+
+    results_data = {
         "status":
             "Updated from official FPL data.",
 
@@ -690,16 +1098,10 @@ def main():
                 "status":
                     "Official FPL GW1 data.",
                 "scores":
-                    scores
+                    results
             }
         }
     }
-
-    output = (
-        ROOT
-        / "data"
-        / "results.json"
-    )
 
     with open(
         output,
@@ -708,25 +1110,25 @@ def main():
     ) as file:
 
         json.dump(
-            results,
+            results_data,
             file,
             indent=2,
             ensure_ascii=False
         )
 
     # ========================================================
-    # PRINT FINAL LEADERBOARD
+    # FINAL DISPLAY
     # ========================================================
 
     print()
     print(
-        "========================================"
+        "=============================================="
     )
     print(
-        "       FINAL GW1 LEADERBOARD"
+        "          FINAL GW1 LEADERBOARD"
     )
     print(
-        "========================================"
+        "=============================================="
     )
 
     for position, team in enumerate(
@@ -736,19 +1138,20 @@ def main():
 
         print(
             f"{position}. "
+            f"{team['icon']} "
             f"{team['name']} — "
             f"{team['gw1']} pts"
         )
 
     print()
     print(
-        "========================================"
+        "=============================================="
     )
     print(
         "results.json successfully written."
     )
     print(
-        "========================================"
+        "=============================================="
     )
     print()
 
