@@ -10,9 +10,6 @@ from difflib import SequenceMatcher
 BASE_URL = "https://fantasy.premierleague.com/api/"
 ROOT = Path(__file__).resolve().parents[1]
 
-SQUADS_FILE = ROOT / "data" / "squads.json"
-RESULTS_FILE = ROOT / "data" / "results.json"
-
 
 # ============================================================
 # FPL API
@@ -37,89 +34,39 @@ def get_api(path):
 
 
 # ============================================================
-# GAMEWEEK DETECTION
-# ============================================================
-
-def get_latest_finished_gameweek(bootstrap):
-    """
-    Returns the latest Gameweek whose official FPL status is finished.
-
-    This is safer for the AI league because we only want to score
-    a Gameweek after it has actually finished.
-    """
-
-    events = bootstrap.get("events", [])
-
-    finished = [
-        event
-        for event in events
-        if event.get("finished") is True
-    ]
-
-    if not finished:
-        raise Exception(
-            "No finished Gameweek found in official FPL data."
-        )
-
-    return max(
-        finished,
-        key=lambda event: event["id"]
-    )["id"]
-
-
-# ============================================================
 # NAME NORMALISATION
 # ============================================================
 
 def normalise(value):
-
     if value is None:
         return ""
 
-    value = str(value)
-
-    value = unicodedata.normalize(
-        "NFKD",
-        value
-    )
+    value = unicodedata.normalize("NFKD", str(value))
 
     value = "".join(
-        char
-        for char in value
+        char for char in value
         if not unicodedata.combining(char)
     )
 
     value = value.lower()
 
-    return re.sub(
-        r"[^a-z0-9]",
-        "",
-        value
-    )
+    return re.sub(r"[^a-z0-9]", "", value)
 
 
 def name_tokens(value):
-
     if value is None:
         return []
 
-    value = unicodedata.normalize(
-        "NFKD",
-        str(value)
-    )
+    value = unicodedata.normalize("NFKD", str(value))
 
     value = "".join(
-        char
-        for char in value
+        char for char in value
         if not unicodedata.combining(char)
     )
 
     value = value.lower()
 
-    return re.findall(
-        r"[a-z0-9]+",
-        value
-    )
+    return re.findall(r"[a-z0-9]+", value)
 
 
 # ============================================================
@@ -135,9 +82,7 @@ POSITION_MAP = {
 
 
 def fpl_position(player):
-    return POSITION_MAP.get(
-        player.get("element_type")
-    )
+    return POSITION_MAP.get(player.get("element_type"))
 
 
 # ============================================================
@@ -145,7 +90,6 @@ def fpl_position(player):
 # ============================================================
 
 def player_full_name(player):
-
     return (
         str(player.get("first_name", "")).strip()
         + " "
@@ -154,20 +98,11 @@ def player_full_name(player):
 
 
 def player_names(player):
-
-    first = str(
-        player.get("first_name", "")
-    ).strip()
-
-    second = str(
-        player.get("second_name", "")
-    ).strip()
-
-    web = str(
-        player.get("web_name", "")
-    ).strip()
-
     names = set()
+
+    first = str(player.get("first_name", "")).strip()
+    second = str(player.get("second_name", "")).strip()
+    web = str(player.get("web_name", "")).strip()
 
     if first:
         names.add(first)
@@ -193,21 +128,14 @@ def find_player(players, name, position=None):
     target = normalise(name)
 
     if not target:
-        raise Exception(
-            "Empty player name supplied."
-        )
+        raise Exception("Empty player name supplied.")
 
     candidates = []
 
     for player in players:
 
         if position:
-
-            official_position = fpl_position(
-                player
-            )
-
-            if official_position != position:
+            if fpl_position(player) != position:
                 continue
 
         candidates.append(player)
@@ -215,100 +143,31 @@ def find_player(players, name, position=None):
     if not candidates:
         candidates = list(players)
 
-    # --------------------------------------------------------
     # Exact full name
-    # --------------------------------------------------------
-
     for player in candidates:
-
-        if target == normalise(
-            player_full_name(player)
-        ):
+        if target == normalise(player_full_name(player)):
             return player
 
-    # --------------------------------------------------------
     # Exact web name
-    # --------------------------------------------------------
-
     for player in candidates:
-
-        if target == normalise(
-            player.get("web_name", "")
-        ):
+        if target == normalise(player.get("web_name", "")):
             return player
 
-    # --------------------------------------------------------
-    # Any official name
-    # --------------------------------------------------------
-
+    # Exact official name
     for player in candidates:
-
         for official_name in player_names(player):
-
-            if target == normalise(
-                official_name
-            ):
+            if target == normalise(official_name):
                 return player
 
-    # --------------------------------------------------------
-    # First + last token
-    # --------------------------------------------------------
-
-    target_parts = name_tokens(name)
-
-    if len(target_parts) >= 2:
-
-        first_target = target_parts[0]
-        last_target = target_parts[-1]
-
-        possible = []
-
-        for player in candidates:
-
-            first = normalise(
-                player.get("first_name", "")
-            )
-
-            second = normalise(
-                player.get("second_name", "")
-            )
-
-            web = normalise(
-                player.get("web_name", "")
-            )
-
-            if (
-                first == first_target
-                and (
-                    last_target == second
-                    or last_target == web
-                    or second.endswith(last_target)
-                )
-            ):
-                possible.append(player)
-
-        if len(possible) == 1:
-            return possible[0]
-
-    # --------------------------------------------------------
     # Token matching
-    # --------------------------------------------------------
+    target_parts = set(name_tokens(name))
 
     scored = []
 
-    target_parts = set(
-        name_tokens(name)
-    )
-
     for player in candidates:
 
-        official_full = normalise(
-            player_full_name(player)
-        )
-
-        official_web = normalise(
-            player.get("web_name", "")
-        )
+        official_full = normalise(player_full_name(player))
+        official_web = normalise(player.get("web_name", ""))
 
         score = 0
 
@@ -319,34 +178,32 @@ def find_player(players, name, position=None):
             score += 60
 
         official_parts = set(
-            name_tokens(
-                player_full_name(player)
-            )
+            name_tokens(player_full_name(player))
         )
 
-        overlap = len(
-            target_parts & official_parts
-        )
+        overlap = len(target_parts & official_parts)
 
         score += overlap * 25
 
-        if (
-            target_parts
-            and official_parts
-            and list(target_parts)[-1]
-            == list(official_parts)[-1]
-        ):
-            score += 20
+        if target_parts:
+            official_tokens = name_tokens(
+                player_full_name(player)
+            )
+
+            if (
+                official_tokens
+                and name_tokens(name)[-1]
+                == official_tokens[-1]
+            ):
+                score += 40
 
         if score > 0:
-            scored.append(
-                (score, player)
-            )
+            scored.append((score, player))
 
     if scored:
 
         scored.sort(
-            key=lambda item: item[0],
+            key=lambda x: x[0],
             reverse=True
         )
 
@@ -361,21 +218,14 @@ def find_player(players, name, position=None):
         if len(best) == 1:
             return best[0]
 
-    # --------------------------------------------------------
     # Controlled fuzzy matching
-    # --------------------------------------------------------
-
     fuzzy = []
 
     for player in candidates:
 
         names_to_check = [
-            normalise(
-                player_full_name(player)
-            ),
-            normalise(
-                player.get("web_name", "")
-            ),
+            normalise(player_full_name(player)),
+            normalise(player.get("web_name", "")),
         ]
 
         best_ratio = 0
@@ -396,12 +246,10 @@ def find_player(players, name, position=None):
                 ratio
             )
 
-        fuzzy.append(
-            (best_ratio, player)
-        )
+        fuzzy.append((best_ratio, player))
 
     fuzzy.sort(
-        key=lambda item: item[0],
+        key=lambda x: x[0],
         reverse=True
     )
 
@@ -425,103 +273,179 @@ def find_player(players, name, position=None):
 
 
 # ============================================================
+# FORMATION VALIDATION
+# ============================================================
+
+def valid_formation(lineup):
+
+    gk = sum(
+        p["position"] == "GK"
+        for p in lineup
+    )
+
+    defenders = sum(
+        p["position"] == "DEF"
+        for p in lineup
+    )
+
+    midfielders = sum(
+        p["position"] == "MID"
+        for p in lineup
+    )
+
+    forwards = sum(
+        p["position"] == "FWD"
+        for p in lineup
+    )
+
+    return (
+        gk == 1
+        and defenders >= 3
+        and midfielders >= 2
+        and forwards >= 1
+    )
+
+
+# ============================================================
 # SQUAD STRUCTURE VALIDATION
 # ============================================================
 
 def validate_squad(team):
 
-    starting = team.get("starting", [])
-    bench = team.get("bench", [])
+    all_players = (
+        team.get("starting", [])
+        + team.get("bench", [])
+    )
 
-    if len(starting) != 11:
+    if len(all_players) != 15:
         raise Exception(
-            f"{team.get('name')} has "
-            f"{len(starting)} starting players. "
-            "Exactly 11 are required."
+            f"{team.get('name', 'Team')} has "
+            f"{len(all_players)} players instead of 15."
         )
 
-    if len(bench) != 4:
-        raise Exception(
-            f"{team.get('name')} has "
-            f"{len(bench)} bench players. "
-            "Exactly 4 are required."
-        )
-
-    all_players = starting + bench
-
-    names = [
-        normalise(player[0])
-        for player in all_players
-    ]
-
-    if len(names) != len(set(names)):
-        raise Exception(
-            f"{team.get('name')} has duplicate players."
-        )
-
-    counts = {
+    positions = {
         "GK": 0,
         "DEF": 0,
         "MID": 0,
-        "FWD": 0
+        "FWD": 0,
     }
 
     for name, position in all_players:
 
-        if position not in counts:
+        if position not in positions:
             raise Exception(
-                f"{team.get('name')}: invalid position "
-                f"{position} for {name}"
+                f"Invalid position for {name}: {position}"
             )
 
-        counts[position] += 1
+        positions[position] += 1
 
-    if counts != {
+    if positions != {
         "GK": 2,
         "DEF": 5,
         "MID": 5,
-        "FWD": 3
+        "FWD": 3,
     }:
         raise Exception(
-            f"{team.get('name')} has invalid squad structure: "
-            f"{counts}. "
-            "Required: 2 GK / 5 DEF / 5 MID / 3 FWD."
+            f"{team.get('name', 'Team')} has invalid squad "
+            f"structure: {positions}"
         )
 
-    # Starting XI formation
-    starting_counts = {
-        "GK": 0,
-        "DEF": 0,
-        "MID": 0,
-        "FWD": 0
+
+# ============================================================
+# TRANSFER VALIDATION
+# ============================================================
+
+def validate_transfer(previous_team, current_team):
+
+    previous = {
+        normalise(name): position
+        for name, position in (
+            previous_team.get("starting", [])
+            + previous_team.get("bench", [])
+        )
     }
 
-    for _, position in starting:
-        starting_counts[position] += 1
+    current = {
+        normalise(name): position
+        for name, position in (
+            current_team.get("starting", [])
+            + current_team.get("bench", [])
+        )
+    }
 
-    if starting_counts["GK"] != 1:
+    outgoing = [
+        name
+        for name in previous
+        if name not in current
+    ]
+
+    incoming = [
+        name
+        for name in current
+        if name not in previous
+    ]
+
+    declared_out = normalise(
+        current_team.get("transfer_out")
+    )
+
+    declared_in = normalise(
+        current_team.get("transfer_in")
+    )
+
+    if len(outgoing) != len(incoming):
+
         raise Exception(
-            f"{team.get('name')} must start exactly 1 GK."
+            f"{current_team.get('name')} has an invalid "
+            f"GW transfer: {len(outgoing)} OUT / "
+            f"{len(incoming)} IN."
         )
 
-    if starting_counts["DEF"] < 3:
+    used = int(
+        current_team.get(
+            "free_transfers_used",
+            0
+        )
+    )
+
+    hit = int(
+        current_team.get(
+            "hit",
+            0
+        )
+    )
+
+    if used > 1:
+
         raise Exception(
-            f"{team.get('name')} must start at least 3 DEF."
+            f"{current_team.get('name')} used "
+            f"{used} free transfers. Maximum is 1."
         )
 
-    if starting_counts["MID"] < 2:
+    if hit < 0:
+
         raise Exception(
-            f"{team.get('name')} must start at least 2 MID."
+            f"{current_team.get('name')} has invalid hit."
         )
 
-    if starting_counts["FWD"] < 1:
-        raise Exception(
-            f"{team.get('name')} must start at least 1 FWD."
-        )
+    if outgoing:
+
+        if normalise(outgoing[0]) != declared_out:
+            raise Exception(
+                f"{current_team.get('name')} transfer OUT "
+                f"does not match squad change."
+            )
+
+        if normalise(incoming[0]) != declared_in:
+            raise Exception(
+                f"{current_team.get('name')} transfer IN "
+                f"does not match squad change."
+            )
 
     print(
-        f"  ✓ Squad structure valid: "
-        f"2 GK / 5 DEF / 5 MID / 3 FWD"
+        f"  ✓ Transfer check: "
+        f"{current_team.get('name')} "
+        f"{outgoing} -> {incoming}"
     )
 
 
@@ -558,20 +482,20 @@ def load_squad_player(
     except Exception:
 
         print(
-            f"  ⚠️ WARNING: '{name}' not found "
-            f"in official FPL database. "
-            "Assigned 0 points."
+            f"  ⚠️ WARNING: "
+            f"Could not match '{name}'. "
+            f"Using 0 points."
         )
 
         official_name = (
-            f"{name} (Unregistered)"
+            f"{name} (Unmatched)"
         )
 
         fpl_id = 0
 
         stats = {
             "total_points": 0,
-            "minutes": 0
+            "minutes": 0,
         }
 
     return {
@@ -584,55 +508,18 @@ def load_squad_player(
 
 
 # ============================================================
-# VALID FORMATION
-# ============================================================
-
-def valid_formation(lineup):
-
-    gk = sum(
-        p["position"] == "GK"
-        for p in lineup
-    )
-
-    defenders = sum(
-        p["position"] == "DEF"
-        for p in lineup
-    )
-
-    midfielders = sum(
-        p["position"] == "MID"
-        for p in lineup
-    )
-
-    forwards = sum(
-        p["position"] == "FWD"
-        for p in lineup
-    )
-
-    return (
-        gk == 1
-        and defenders >= 3
-        and midfielders >= 2
-        and forwards >= 1
-    )
-
-
-# ============================================================
-# CALCULATE ONE TEAM
+# CALCULATE TEAM
 # ============================================================
 
 def calculate_team(
     team,
     players,
-    live
+    live,
+    allow_autosubs
 ):
-
-    validate_squad(team)
 
     starting = []
     bench = []
-
-    print("\nLoading starting XI...")
 
     for name, position in team["starting"]:
 
@@ -645,13 +532,6 @@ def calculate_team(
 
         starting.append(player)
 
-        print(
-            f"  ✓ {name} -> "
-            f"{player['official_name']}"
-        )
-
-    print("\nLoading bench...")
-
     for name, position in team["bench"]:
 
         player = load_squad_player(
@@ -663,112 +543,94 @@ def calculate_team(
 
         bench.append(player)
 
-        print(
-            f"  ✓ {name} -> "
-            f"{player['official_name']}"
-        )
-
     lineup = list(starting)
 
     # ========================================================
     # AUTOMATIC SUBSTITUTIONS
+    # Only applied once the GW is finished.
     # ========================================================
 
-    print(
-        "\nChecking automatic substitutions..."
-    )
+    if allow_autosubs:
 
-    # --------------------------------------------------------
-    # Goalkeeper
-    # --------------------------------------------------------
+        starting_gk = lineup[0]
+        bench_gk = bench[0]
 
-    starting_gk = lineup[0]
-    bench_gk = bench[0]
-
-    if (
-        int(
-            starting_gk["stats"].get(
-                "minutes",
-                0
-            )
-        ) == 0
-        and int(
-            bench_gk["stats"].get(
-                "minutes",
-                0
-            )
-        ) > 0
-    ):
-
-        print(
-            f"  GK auto-sub: "
-            f"{starting_gk['name']} -> "
-            f"{bench_gk['name']}"
-        )
-
-        lineup[0] = bench_gk
-
-    # --------------------------------------------------------
-    # Outfield bench players in submitted order
-    # --------------------------------------------------------
-
-    for substitute in bench[1:]:
-
-        substitute_minutes = int(
-            substitute["stats"].get(
-                "minutes",
-                0
-            )
-        )
-
-        if substitute_minutes <= 0:
-            continue
-
-        for index in range(
-            1,
-            len(lineup)
+        if (
+            int(
+                starting_gk["stats"].get(
+                    "minutes",
+                    0
+                )
+            ) == 0
+            and
+            int(
+                bench_gk["stats"].get(
+                    "minutes",
+                    0
+                )
+            ) > 0
         ):
 
-            starter = lineup[index]
+            lineup[0] = bench_gk
 
-            starter_minutes = int(
-                starter["stats"].get(
+            print(
+                f"  GK auto-sub: "
+                f"{starting_gk['name']} -> "
+                f"{bench_gk['name']}"
+            )
+
+        for substitute in bench[1:]:
+
+            substitute_minutes = int(
+                substitute["stats"].get(
                     "minutes",
                     0
                 )
             )
 
-            if starter_minutes > 0:
+            if substitute_minutes <= 0:
                 continue
 
-            test_lineup = list(lineup)
-
-            test_lineup[index] = substitute
-
-            if valid_formation(
-                test_lineup
+            for index in range(
+                1,
+                len(lineup)
             ):
 
-                print(
-                    f"  Auto-sub: "
-                    f"{starter['name']} -> "
-                    f"{substitute['name']}"
+                starter = lineup[index]
+
+                starter_minutes = int(
+                    starter["stats"].get(
+                        "minutes",
+                        0
+                    )
                 )
 
-                lineup[index] = substitute
+                if starter_minutes > 0:
+                    continue
 
-                break
+                test_lineup = list(lineup)
+
+                test_lineup[index] = substitute
+
+                if valid_formation(
+                    test_lineup
+                ):
+
+                    lineup[index] = substitute
+
+                    print(
+                        f"  Auto-sub: "
+                        f"{starter['name']} -> "
+                        f"{substitute['name']}"
+                    )
+
+                    break
 
     # ========================================================
-    # PLAYER POINTS
+    # POINTS
     # ========================================================
-
-    print(
-        "\nStarting XI points:"
-    )
 
     total = 0
-
     player_breakdown = []
 
     for player in lineup:
@@ -796,14 +658,8 @@ def calculate_team(
             "minutes": minutes,
         })
 
-        print(
-            f"  {player['name']}: "
-            f"{points} pts "
-            f"({minutes} min)"
-        )
-
     # ========================================================
-    # CAPTAIN / VICE
+    # CAPTAIN
     # ========================================================
 
     captain_name = team.get(
@@ -819,31 +675,23 @@ def calculate_team(
     captain = None
     vice = None
 
-    # Important:
-    # captain/vice are checked against the ORIGINAL
-    # submitted XI, as in FPL.
+    for player in lineup:
 
-    for player in starting:
-
-        if normalise(
-            player["name"]
-        ) == normalise(
-            captain_name
+        if (
+            normalise(player["name"])
+            ==
+            normalise(captain_name)
         ):
             captain = player
 
-        if normalise(
-            player["name"]
-        ) == normalise(
-            vice_name
+        if (
+            normalise(player["name"])
+            ==
+            normalise(vice_name)
         ):
             vice = player
 
     captain_activated = None
-
-    # --------------------------------------------------------
-    # Captain played
-    # --------------------------------------------------------
 
     if captain:
 
@@ -865,24 +713,7 @@ def calculate_team(
 
             total += captain_points
 
-            captain_activated = (
-                captain["name"]
-            )
-
-            print(
-                f"\nCaptain: "
-                f"{captain['name']} — "
-                f"{captain_points} pts"
-            )
-
-            print(
-                f"Captain bonus: "
-                f"+{captain_points}"
-            )
-
-        # ----------------------------------------------------
-        # Captain did not play -> Vice Captain
-        # ----------------------------------------------------
+            captain_activated = captain["name"]
 
         elif vice:
 
@@ -908,20 +739,6 @@ def calculate_team(
                     f"{vice['name']} (VC)"
                 )
 
-                print(
-                    "\nCaptain did not play."
-                )
-
-                print(
-                    f"Vice-captain activated: "
-                    f"{vice['name']}"
-                )
-
-                print(
-                    f"Vice-captain bonus: "
-                    f"+{vice_points}"
-                )
-
     return {
         "points": total,
         "captain": captain_name,
@@ -938,27 +755,17 @@ def calculate_team(
 def main():
 
     print()
-    print(
-        "=============================================="
-    )
-    print(
-        "          AI FANTASY LEAGUE"
-    )
-    print(
-        "          OFFICIAL FPL UPDATE"
-    )
-    print(
-        "=============================================="
-    )
+    print("=" * 50)
+    print("          AI FANTASY LEAGUE")
+    print("          OFFICIAL FPL UPDATE")
+    print("=" * 50)
     print()
 
-    # ========================================================
-    # DOWNLOAD BOOTSTRAP
-    # ========================================================
+    # --------------------------------------------------------
+    # Load FPL data
+    # --------------------------------------------------------
 
-    print(
-        "Downloading official FPL data..."
-    )
+    print("Downloading official FPL data...")
 
     bootstrap = get_api(
         "bootstrap-static/"
@@ -969,94 +776,157 @@ def main():
         []
     )
 
+    events = bootstrap.get(
+        "events",
+        []
+    )
+
     print(
         f"Loaded {len(players)} players."
     )
 
-    # ========================================================
-    # DETERMINE LATEST FINISHED GW
-    # ========================================================
+    # --------------------------------------------------------
+    # Detect current GW
+    # --------------------------------------------------------
 
-    gameweek = get_latest_finished_gameweek(
-        bootstrap
-    )
+    current_event = None
 
-    print()
+    for event in events:
+
+        if event.get("is_current"):
+            current_event = event
+            break
+
+    if current_event is None:
+
+        for event in events:
+
+            if event.get("is_next"):
+
+                current_id = event["id"]
+
+                current_event = next(
+                    (
+                        e for e in events
+                        if e["id"] == current_id - 1
+                    ),
+                    None
+                )
+
+                break
+
+    if current_event is None:
+
+        finished = [
+            e for e in events
+            if e.get("finished")
+        ]
+
+        if finished:
+            current_event = finished[-1]
+
+    if current_event is None:
+        raise Exception(
+            "Could not determine current Gameweek."
+        )
+
+    gameweek = current_event["id"]
+
     print(
-        f"Latest finished Gameweek: GW{gameweek}"
+        f"FPL current Gameweek: GW{gameweek}"
     )
 
-    # ========================================================
-    # LOAD SQUADS
-    # ========================================================
+    # --------------------------------------------------------
+    # Load squads.json
+    # --------------------------------------------------------
 
-    if not SQUADS_FILE.exists():
+    squads_file = (
+        ROOT
+        / "data"
+        / "squads.json"
+    )
+
+    if not squads_file.exists():
 
         raise Exception(
-            f"Could not find squads.json at:\n"
-            f"{SQUADS_FILE}"
+            f"Could not find squads.json: "
+            f"{squads_file}"
         )
 
     with open(
-        SQUADS_FILE,
+        squads_file,
         "r",
         encoding="utf-8"
     ) as file:
 
-        squads = json.load(file)
+        squad_data = json.load(file)
+
+    if "gameweeks" not in squad_data:
+
+        raise Exception(
+            "squads.json is using the old format. "
+            "Expected a 'gameweeks' object."
+        )
+
+    gameweeks = squad_data["gameweeks"]
+
+    gw_key = str(gameweek)
+
+    if gw_key not in gameweeks:
+
+        raise Exception(
+            f"No squad submission exists for GW{gameweek}."
+        )
+
+    current_squads = gameweeks[gw_key]
 
     print(
-        f"Loaded {len(squads)} AI squads."
+        f"Loaded {len(current_squads)} AI squads "
+        f"for GW{gameweek}."
     )
 
-    # ========================================================
-    # LOAD OLD RESULTS
-    # ========================================================
+    # --------------------------------------------------------
+    # Validate squads
+    # --------------------------------------------------------
 
-    if RESULTS_FILE.exists():
-
-        with open(
-            RESULTS_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            old_results = json.load(file)
-
-    else:
-
-        old_results = {}
-
-    old_gameweeks = old_results.get(
-        "gameweeks",
+    previous_squads = gameweeks.get(
+        str(gameweek - 1),
         {}
     )
 
-    # ========================================================
-    # SAFETY CHECK
-    # ========================================================
-
-    if str(gameweek) in old_gameweeks:
+    for manager_id, team in current_squads.items():
 
         print()
         print(
-            f"⚠️ GW{gameweek} already exists "
-            "in results.json."
+            f"Checking {team.get('name', manager_id)}..."
         )
 
-        print(
-            "This script will RECALCULATE and "
-            "replace that Gameweek."
-        )
+        validate_squad(team)
 
-    # ========================================================
-    # DOWNLOAD LIVE GW DATA
-    # ========================================================
+        if gameweek > 1:
+
+            if manager_id not in previous_squads:
+
+                raise Exception(
+                    f"{manager_id} has no previous "
+                    f"Gameweek squad."
+                )
+
+            validate_transfer(
+                previous_squads[manager_id],
+                team
+            )
+
+        print("  ✓ Squad structure valid")
+
+    # --------------------------------------------------------
+    # Live GW data
+    # --------------------------------------------------------
 
     print()
     print(
         f"Downloading official GW{gameweek} "
-        "player points..."
+        f"player points..."
     )
 
     live_data = get_api(
@@ -1076,43 +946,41 @@ def main():
         f"{len(live)} players."
     )
 
-    # ========================================================
-    # CALCULATE ALL TEAMS
-    # ========================================================
+    # --------------------------------------------------------
+    # Calculate
+    # --------------------------------------------------------
 
-    current_results = []
+    results = []
 
-    for manager_id, team in squads.items():
+    gw_finished = bool(
+        current_event.get("finished")
+    )
+
+    for manager_id, team in current_squads.items():
 
         print()
-        print(
-            "=============================================="
-        )
-
+        print("=" * 50)
         print(
             team.get(
                 "name",
                 manager_id
             )
         )
-
-        print(
-            "=============================================="
-        )
+        print("=" * 50)
 
         result = calculate_team(
             team,
             players,
-            live
+            live,
+            allow_autosubs=gw_finished
         )
 
-        print()
         print(
-            f"FINAL GW{gameweek} SCORE: "
+            f"GW{gameweek} points: "
             f"{result['points']}"
         )
 
-        current_results.append({
+        results.append({
             "id": manager_id,
             "name": team.get(
                 "name",
@@ -1127,133 +995,130 @@ def main():
                 ""
             ),
             "points": result["points"],
-            "captain": team.get(
-                "captain",
-                ""
+            "captain": result["captain"],
+            "vice": result["vice"],
+            "captain_activated": (
+                result["captain_activated"]
             ),
-            "vice": team.get(
-                "vice",
-                ""
-            ),
-            "captain_activated":
-                result[
-                    "captain_activated"
-                ],
-            "players":
-                result["players"],
+            "players": result["players"],
         })
 
-    # ========================================================
-    # SAVE CURRENT GAMEWEEK
-    # ========================================================
-
-    updated_gameweeks = dict(
-        old_gameweeks
+    results.sort(
+        key=lambda x: x["points"],
+        reverse=True
     )
 
-    updated_gameweeks[
-        str(gameweek)
-    ] = {
-        "status":
-            f"Official FPL GW{gameweek} data.",
-        "scores":
-            current_results
+    # --------------------------------------------------------
+    # Load previous results
+    # --------------------------------------------------------
+
+    results_file = (
+        ROOT
+        / "data"
+        / "results.json"
+    )
+
+    old_results = {}
+
+    if results_file.exists():
+
+        try:
+
+            with open(
+                results_file,
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                old_results = json.load(file)
+
+        except Exception:
+
+            old_results = {}
+
+    old_gameweeks = old_results.get(
+        "gameweeks",
+        {}
+    )
+
+    # Replace ONLY this Gameweek.
+    # Historical Gameweeks remain untouched.
+
+    old_gameweeks[gw_key] = {
+        "status": (
+            f"Official FPL GW{gameweek} "
+            + (
+                "data."
+                if gw_finished
+                else "live data."
+            )
+        ),
+        "scores": results,
     }
 
-    # ========================================================
-    # CALCULATE CUMULATIVE TOTALS
-    # ========================================================
+    # --------------------------------------------------------
+    # Calculate cumulative totals
+    # --------------------------------------------------------
 
-    manager_totals = {}
+    cumulative = {}
 
-    for manager_id in squads:
-
-        manager_totals[
-            manager_id
-        ] = 0
-
-    for gw_key, gw_data in updated_gameweeks.items():
+    for gw_number, gw_data in old_gameweeks.items():
 
         for result in gw_data.get(
             "scores",
             []
         ):
 
-            manager_id = result.get(
-                "id"
-            )
+            manager_id = result["id"]
 
-            points = int(
-                result.get(
-                    "points",
+            cumulative[manager_id] = (
+                cumulative.get(
+                    manager_id,
                     0
+                )
+                + int(
+                    result.get(
+                        "points",
+                        0
+                    )
                 )
             )
 
-            if manager_id in manager_totals:
-
-                manager_totals[
-                    manager_id
-                ] += points
-
-    # ========================================================
-    # CREATE LEADERBOARD
-    # ========================================================
-
     leaderboard = []
 
-    for manager_id, team in squads.items():
+    for result in results:
 
-        # Find this team's current GW score
-        current_score = 0
-
-        for result in current_results:
-
-            if result["id"] == manager_id:
-
-                current_score = result[
-                    "points"
-                ]
-
-                break
+        manager_id = result["id"]
 
         leaderboard.append({
             "id": manager_id,
-            "name": team.get(
-                "name",
-                manager_id
-            ),
-            "icon": team.get(
-                "icon",
-                ""
-            ),
-            "formation": team.get(
-                "formation",
-                ""
-            ),
-            "captain": team.get(
-                "captain",
-                ""
-            ),
-            "vice": team.get(
-                "vice",
-                ""
-            ),
-
-            # Dynamic GW field
-            f"gw{gameweek}":
-                current_score,
-
-            # Backwards-compatible field
-            "current_gw":
-                current_score,
-
-            # Historical cumulative total
-            "total":
-                manager_totals.get(
-                    manager_id,
-                    0
+            "name": result["name"],
+            "icon": result["icon"],
+            "formation": result["formation"],
+            "gw1": next(
+                (
+                    r["points"]
+                    for r in old_gameweeks
+                    .get("1", {})
+                    .get("scores", [])
+                    if r["id"] == manager_id
                 ),
+                0
+            ),
+            "gw2": next(
+                (
+                    r["points"]
+                    for r in old_gameweeks
+                    .get("2", {})
+                    .get("scores", [])
+                    if r["id"] == manager_id
+                ),
+                0
+            ),
+            "total": cumulative.get(
+                manager_id,
+                0
+            ),
         })
 
     leaderboard.sort(
@@ -1261,62 +1126,50 @@ def main():
         reverse=True
     )
 
-    # ========================================================
-    # BUILD FINAL RESULTS.JSON
-    # ========================================================
+    # --------------------------------------------------------
+    # Write results.json
+    # --------------------------------------------------------
 
-    results_data = {
-        "status":
-            "Updated from official FPL data.",
-
-        "updated_at":
-            datetime.now(
-                timezone.utc
-            ).isoformat(),
-
-        "current_gameweek":
-            gameweek,
-
-        "leaderboard":
-            leaderboard,
-
-        "gameweeks":
-            updated_gameweeks
+    output = {
+        "status": (
+            f"Official FPL GW{gameweek} "
+            + (
+                "data."
+                if gw_finished
+                else "live data."
+            )
+        ),
+        "updated_at": datetime.now(
+            timezone.utc
+        ).isoformat(),
+        "current_gameweek": gameweek,
+        "leaderboard": leaderboard,
+        "gameweeks": old_gameweeks,
     }
 
-    # ========================================================
-    # WRITE RESULTS
-    # ========================================================
-
     with open(
-        RESULTS_FILE,
+        results_file,
         "w",
         encoding="utf-8"
     ) as file:
 
         json.dump(
-            results_data,
+            output,
             file,
             indent=2,
             ensure_ascii=False
         )
 
-    # ========================================================
-    # FINAL OUTPUT
-    # ========================================================
+    # --------------------------------------------------------
+    # Final output
+    # --------------------------------------------------------
 
     print()
+    print("=" * 50)
     print(
-        "=============================================="
+        f"          GW{gameweek} LEADERBOARD"
     )
-
-    print(
-        f"       FINAL GW{gameweek} LEADERBOARD"
-    )
-
-    print(
-        "=============================================="
-    )
+    print("=" * 50)
 
     for position, team in enumerate(
         leaderboard,
@@ -1328,29 +1181,15 @@ def main():
             f"{team['icon']} "
             f"{team['name']} — "
             f"GW{gameweek}: "
-            f"{team[f'gw{gameweek}']} pts | "
-            f"TOTAL: "
-            f"{team['total']} pts"
+            f"{team.get(f'gw{gameweek}', 0)} "
+            f"| TOTAL: "
+            f"{team['total']}"
         )
 
     print()
     print(
-        "=============================================="
-    )
-
-    print(
         "results.json successfully written."
     )
-
-    print(
-        f"GW{gameweek} added without deleting "
-        "previous Gameweeks."
-    )
-
-    print(
-        "=============================================="
-    )
-
     print()
 
 
