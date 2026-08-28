@@ -143,31 +143,49 @@ def find_player(players, name, position=None):
     if not candidates:
         candidates = list(players)
 
+    # --------------------------------------------------------
     # Exact full name
+    # --------------------------------------------------------
+
     for player in candidates:
         if target == normalise(player_full_name(player)):
             return player
 
+    # --------------------------------------------------------
     # Exact web name
+    # --------------------------------------------------------
+
     for player in candidates:
         if target == normalise(player.get("web_name", "")):
             return player
 
+    # --------------------------------------------------------
     # Exact official name
+    # --------------------------------------------------------
+
     for player in candidates:
         for official_name in player_names(player):
+
             if target == normalise(official_name):
                 return player
 
+    # --------------------------------------------------------
     # Token matching
+    # --------------------------------------------------------
+
     target_parts = set(name_tokens(name))
 
     scored = []
 
     for player in candidates:
 
-        official_full = normalise(player_full_name(player))
-        official_web = normalise(player.get("web_name", ""))
+        official_full = normalise(
+            player_full_name(player)
+        )
+
+        official_web = normalise(
+            player.get("web_name", "")
+        )
 
         score = 0
 
@@ -181,24 +199,26 @@ def find_player(players, name, position=None):
             name_tokens(player_full_name(player))
         )
 
-        overlap = len(target_parts & official_parts)
+        overlap = len(
+            target_parts & official_parts
+        )
 
         score += overlap * 25
 
-        if target_parts:
-            official_tokens = name_tokens(
-                player_full_name(player)
-            )
+        target_tokens = name_tokens(name)
+        official_tokens = name_tokens(
+            player_full_name(player)
+        )
 
-            if (
-                official_tokens
-                and name_tokens(name)[-1]
-                == official_tokens[-1]
-            ):
+        if target_tokens and official_tokens:
+
+            if target_tokens[-1] == official_tokens[-1]:
                 score += 40
 
         if score > 0:
-            scored.append((score, player))
+            scored.append(
+                (score, player)
+            )
 
     if scored:
 
@@ -218,14 +238,21 @@ def find_player(players, name, position=None):
         if len(best) == 1:
             return best[0]
 
+    # --------------------------------------------------------
     # Controlled fuzzy matching
+    # --------------------------------------------------------
+
     fuzzy = []
 
     for player in candidates:
 
         names_to_check = [
-            normalise(player_full_name(player)),
-            normalise(player.get("web_name", "")),
+            normalise(
+                player_full_name(player)
+            ),
+            normalise(
+                player.get("web_name", "")
+            ),
         ]
 
         best_ratio = 0
@@ -246,7 +273,9 @@ def find_player(players, name, position=None):
                 ratio
             )
 
-        fuzzy.append((best_ratio, player))
+        fuzzy.append(
+            (best_ratio, player)
+        )
 
     fuzzy.sort(
         key=lambda x: x[0],
@@ -318,6 +347,7 @@ def validate_squad(team):
     )
 
     if len(all_players) != 15:
+
         raise Exception(
             f"{team.get('name', 'Team')} has "
             f"{len(all_players)} players instead of 15."
@@ -333,21 +363,25 @@ def validate_squad(team):
     for name, position in all_players:
 
         if position not in positions:
+
             raise Exception(
                 f"Invalid position for {name}: {position}"
             )
 
         positions[position] += 1
 
-    if positions != {
+    expected = {
         "GK": 2,
         "DEF": 5,
         "MID": 5,
         "FWD": 3,
-    }:
+    }
+
+    if positions != expected:
+
         raise Exception(
-            f"{team.get('name', 'Team')} has invalid squad "
-            f"structure: {positions}"
+            f"{team.get('name', 'Team')} has invalid "
+            f"squad structure: {positions}"
         )
 
 
@@ -431,12 +465,14 @@ def validate_transfer(previous_team, current_team):
     if outgoing:
 
         if normalise(outgoing[0]) != declared_out:
+
             raise Exception(
                 f"{current_team.get('name')} transfer OUT "
                 f"does not match squad change."
             )
 
         if normalise(incoming[0]) != declared_in:
+
             raise Exception(
                 f"{current_team.get('name')} transfer IN "
                 f"does not match squad change."
@@ -521,6 +557,10 @@ def calculate_team(
     starting = []
     bench = []
 
+    # --------------------------------------------------------
+    # Starting XI
+    # --------------------------------------------------------
+
     for name, position in team["starting"]:
 
         player = load_squad_player(
@@ -531,6 +571,10 @@ def calculate_team(
         )
 
         starting.append(player)
+
+    # --------------------------------------------------------
+    # Bench
+    # --------------------------------------------------------
 
     for name, position in team["bench"]:
 
@@ -547,7 +591,6 @@ def calculate_team(
 
     # ========================================================
     # AUTOMATIC SUBSTITUTIONS
-    # Only applied once the GW is finished.
     # ========================================================
 
     if allow_autosubs:
@@ -579,6 +622,7 @@ def calculate_team(
                 f"{bench_gk['name']}"
             )
 
+        # Outfield automatic substitutions
         for substitute in bench[1:]:
 
             substitute_minutes = int(
@@ -627,7 +671,7 @@ def calculate_team(
                     break
 
     # ========================================================
-    # POINTS
+    # PLAYER POINTS
     # ========================================================
 
     total = 0
@@ -659,7 +703,7 @@ def calculate_team(
         })
 
     # ========================================================
-    # CAPTAIN
+    # CAPTAIN / VICE-CAPTAIN
     # ========================================================
 
     captain_name = team.get(
@@ -715,6 +759,12 @@ def calculate_team(
 
             captain_activated = captain["name"]
 
+            print(
+                f"  Captain: "
+                f"{captain['name']} "
+                f"+{captain_points}"
+            )
+
         elif vice:
 
             vice_minutes = int(
@@ -739,6 +789,16 @@ def calculate_team(
                     f"{vice['name']} (VC)"
                 )
 
+                print(
+                    f"  Captain did not play."
+                )
+
+                print(
+                    f"  Vice-captain activated: "
+                    f"{vice['name']} "
+                    f"+{vice_points}"
+                )
+
     return {
         "points": total,
         "captain": captain_name,
@@ -761,9 +821,9 @@ def main():
     print("=" * 50)
     print()
 
-    # --------------------------------------------------------
-    # Load FPL data
-    # --------------------------------------------------------
+    # ========================================================
+    # LOAD OFFICIAL FPL DATA
+    # ========================================================
 
     print("Downloading official FPL data...")
 
@@ -785,36 +845,40 @@ def main():
         f"Loaded {len(players)} players."
     )
 
-    # --------------------------------------------------------
-    # Detect current GW
-    # --------------------------------------------------------
+    # ========================================================
+    # DETERMINE CURRENT GAMEWEEK
+    # ========================================================
 
     current_event = None
 
+    # First: currently active GW
     for event in events:
 
         if event.get("is_current"):
+
             current_event = event
             break
 
+    # Second: if there is a next GW, use the previous one
     if current_event is None:
 
         for event in events:
 
             if event.get("is_next"):
 
-                current_id = event["id"]
+                previous_id = event["id"] - 1
 
                 current_event = next(
                     (
                         e for e in events
-                        if e["id"] == current_id - 1
+                        if e["id"] == previous_id
                     ),
                     None
                 )
 
                 break
 
+    # Third: latest finished GW
     if current_event is None:
 
         finished = [
@@ -826,6 +890,7 @@ def main():
             current_event = finished[-1]
 
     if current_event is None:
+
         raise Exception(
             "Could not determine current Gameweek."
         )
@@ -836,9 +901,9 @@ def main():
         f"FPL current Gameweek: GW{gameweek}"
     )
 
-    # --------------------------------------------------------
-    # Load squads.json
-    # --------------------------------------------------------
+    # ========================================================
+    # LOAD SQUADS.JSON
+    # ========================================================
 
     squads_file = (
         ROOT
@@ -878,27 +943,72 @@ def main():
             f"No squad submission exists for GW{gameweek}."
         )
 
-    current_squads = gameweeks[gw_key]
+    raw_current_squads = gameweeks[gw_key]
+
+    # ========================================================
+    # IMPORTANT:
+    # Remove metadata such as:
+    #
+    # "locked": true
+    #
+    # Only dictionaries containing actual squad data
+    # are treated as AI teams.
+    # ========================================================
+
+    current_squads = {
+        manager_id: team
+        for manager_id, team
+        in raw_current_squads.items()
+        if isinstance(team, dict)
+        and "starting" in team
+        and "bench" in team
+    }
 
     print(
         f"Loaded {len(current_squads)} AI squads "
         f"for GW{gameweek}."
     )
 
-    # --------------------------------------------------------
-    # Validate squads
-    # --------------------------------------------------------
+    if not current_squads:
+
+        raise Exception(
+            f"No valid AI squads found for GW{gameweek}."
+        )
+
+    # ========================================================
+    # PREVIOUS GAMEWEEK
+    # ========================================================
 
     previous_squads = gameweeks.get(
         str(gameweek - 1),
         {}
     )
 
+    # Also remove metadata from previous GW
+    if isinstance(previous_squads, dict):
+
+        previous_squads = {
+            manager_id: team
+            for manager_id, team
+            in previous_squads.items()
+            if isinstance(team, dict)
+            and "starting" in team
+            and "bench" in team
+        }
+
+    # ========================================================
+    # VALIDATE CURRENT SQUADS
+    # ========================================================
+
+    print()
+    print("Validating AI squads...")
+
     for manager_id, team in current_squads.items():
 
         print()
         print(
-            f"Checking {team.get('name', manager_id)}..."
+            f"Checking "
+            f"{team.get('name', manager_id)}..."
         )
 
         validate_squad(team)
@@ -917,11 +1027,13 @@ def main():
                 team
             )
 
-        print("  ✓ Squad structure valid")
+        print(
+            "  ✓ Squad structure valid"
+        )
 
-    # --------------------------------------------------------
-    # Live GW data
-    # --------------------------------------------------------
+    # ========================================================
+    # DOWNLOAD OFFICIAL GAMEWEEK LIVE DATA
+    # ========================================================
 
     print()
     print(
@@ -946,9 +1058,9 @@ def main():
         f"{len(live)} players."
     )
 
-    # --------------------------------------------------------
-    # Calculate
-    # --------------------------------------------------------
+    # ========================================================
+    # CALCULATE SCORES
+    # ========================================================
 
     results = []
 
@@ -1008,9 +1120,9 @@ def main():
         reverse=True
     )
 
-    # --------------------------------------------------------
-    # Load previous results
-    # --------------------------------------------------------
+    # ========================================================
+    # LOAD EXISTING RESULTS
+    # ========================================================
 
     results_file = (
         ROOT
@@ -1041,8 +1153,9 @@ def main():
         {}
     )
 
-    # Replace ONLY this Gameweek.
-    # Historical Gameweeks remain untouched.
+    # ========================================================
+    # REPLACE ONLY CURRENT GAMEWEEK
+    # ========================================================
 
     old_gameweeks[gw_key] = {
         "status": (
@@ -1056,20 +1169,29 @@ def main():
         "scores": results,
     }
 
-    # --------------------------------------------------------
-    # Calculate cumulative totals
-    # --------------------------------------------------------
+    # ========================================================
+    # CALCULATE CUMULATIVE TOTALS
+    # ========================================================
 
     cumulative = {}
 
     for gw_number, gw_data in old_gameweeks.items():
+
+        if not isinstance(gw_data, dict):
+            continue
 
         for result in gw_data.get(
             "scores",
             []
         ):
 
-            manager_id = result["id"]
+            if not isinstance(result, dict):
+                continue
+
+            manager_id = result.get("id")
+
+            if manager_id is None:
+                continue
 
             cumulative[manager_id] = (
                 cumulative.get(
@@ -1084,37 +1206,45 @@ def main():
                 )
             )
 
+    # ========================================================
+    # BUILD LEADERBOARD
+    # ========================================================
+
     leaderboard = []
 
     for result in results:
 
         manager_id = result["id"]
 
+        gw1_points = next(
+            (
+                r["points"]
+                for r in old_gameweeks
+                .get("1", {})
+                .get("scores", [])
+                if r.get("id") == manager_id
+            ),
+            0
+        )
+
+        gw2_points = next(
+            (
+                r["points"]
+                for r in old_gameweeks
+                .get("2", {})
+                .get("scores", [])
+                if r.get("id") == manager_id
+            ),
+            0
+        )
+
         leaderboard.append({
             "id": manager_id,
             "name": result["name"],
             "icon": result["icon"],
             "formation": result["formation"],
-            "gw1": next(
-                (
-                    r["points"]
-                    for r in old_gameweeks
-                    .get("1", {})
-                    .get("scores", [])
-                    if r["id"] == manager_id
-                ),
-                0
-            ),
-            "gw2": next(
-                (
-                    r["points"]
-                    for r in old_gameweeks
-                    .get("2", {})
-                    .get("scores", [])
-                    if r["id"] == manager_id
-                ),
-                0
-            ),
+            "gw1": gw1_points,
+            "gw2": gw2_points,
             "total": cumulative.get(
                 manager_id,
                 0
@@ -1126,9 +1256,9 @@ def main():
         reverse=True
     )
 
-    # --------------------------------------------------------
-    # Write results.json
-    # --------------------------------------------------------
+    # ========================================================
+    # WRITE RESULTS.JSON
+    # ========================================================
 
     output = {
         "status": (
@@ -1160,9 +1290,9 @@ def main():
             ensure_ascii=False
         )
 
-    # --------------------------------------------------------
-    # Final output
-    # --------------------------------------------------------
+    # ========================================================
+    # FINAL OUTPUT
+    # ========================================================
 
     print()
     print("=" * 50)
