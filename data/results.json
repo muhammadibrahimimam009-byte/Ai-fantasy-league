@@ -1,6 +1,6 @@
 {
-  "status": "Official FPL GW2 live data.",
-  "updated_at": "2026-09-01T08:01:55.695488+00:00",
+  "status": "Official FPL GW2 data.",
+  "updated_at": "2026-09-02T08:01:37.038814+00:00",
   "current_gameweek": 2,
   "leaderboard": [
     {
@@ -27,8 +27,8 @@
       "icon": "🤖",
       "formation": "3-5-2",
       "gw1": 48,
-      "gw2": 110,
-      "total": 158
+      "gw2": 116,
+      "total": 164
     },
     {
       "id": "meta",
@@ -36,8 +36,8 @@
       "icon": "🧠",
       "formation": "3-4-3",
       "gw1": 48,
-      "gw2": 93,
-      "total": 141
+      "gw2": 94,
+      "total": 142
     }
   ],
   "gameweeks": {
@@ -359,8 +359,86 @@
       ]
     },
     "2": {
-      "status": "Official FPL GW2 live data.",
+      "status": "Official FPL GW2 data.",
       "scores": [
+        {
+          "id": "gpt",
+          "name": "GPT-5.6 Luna",
+          "icon": "🤖",
+          "formation": "3-5-2",
+          "points": 116,
+          "captain": "Bruno Fernandes",
+          "vice": "Erling Haaland",
+          "captain_activated": "Bruno Fernandes",
+          "players": [
+            {
+              "name": "Antonin Kinsky",
+              "position": "GK",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Gabriel",
+              "position": "DEF",
+              "points": 8,
+              "minutes": 90
+            },
+            {
+              "name": "Harry Maguire",
+              "position": "DEF",
+              "points": 4,
+              "minutes": 90
+            },
+            {
+              "name": "Jaka Bijol",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 45
+            },
+            {
+              "name": "Bruno Fernandes",
+              "position": "MID",
+              "points": 23,
+              "minutes": 90
+            },
+            {
+              "name": "Bryan Mbeumo",
+              "position": "MID",
+              "points": 11,
+              "minutes": 90
+            },
+            {
+              "name": "Pascal Gross",
+              "position": "MID",
+              "points": 13,
+              "minutes": 90
+            },
+            {
+              "name": "Mamadou Sangare",
+              "position": "MID",
+              "points": 4,
+              "minutes": 90
+            },
+            {
+              "name": "Cristhian Mosquera",
+              "position": "DEF",
+              "points": 6,
+              "minutes": 78
+            },
+            {
+              "name": "Erling Haaland",
+              "position": "FWD",
+              "points": 13,
+              "minutes": 90
+            },
+            {
+              "name": "Joao Pedro",
+              "position": "FWD",
+              "points": 9,
+              "minutes": 90
+            }
+          ]
+        },
         {
           "id": "gemini",
           "name": "Gemini",
@@ -518,89 +596,11 @@
           ]
         },
         {
-          "id": "gpt",
-          "name": "GPT-5.6 Luna",
-          "icon": "🤖",
-          "formation": "3-5-2",
-          "points": 110,
-          "captain": "Bruno Fernandes",
-          "vice": "Erling Haaland",
-          "captain_activated": "Bruno Fernandes",
-          "players": [
-            {
-              "name": "Antonin Kinsky",
-              "position": "GK",
-              "points": 1,
-              "minutes": 90
-            },
-            {
-              "name": "Gabriel",
-              "position": "DEF",
-              "points": 8,
-              "minutes": 90
-            },
-            {
-              "name": "Harry Maguire",
-              "position": "DEF",
-              "points": 4,
-              "minutes": 90
-            },
-            {
-              "name": "Jaka Bijol",
-              "position": "DEF",
-              "points": 1,
-              "minutes": 45
-            },
-            {
-              "name": "Bruno Fernandes",
-              "position": "MID",
-              "points": 23,
-              "minutes": 90
-            },
-            {
-              "name": "Bryan Mbeumo",
-              "position": "MID",
-              "points": 11,
-              "minutes": 90
-            },
-            {
-              "name": "Pascal Gross",
-              "position": "MID",
-              "points": 13,
-              "minutes": 90
-            },
-            {
-              "name": "Mamadou Sangare",
-              "position": "MID",
-              "points": 4,
-              "minutes": 90
-            },
-            {
-              "name": "Florentino",
-              "position": "MID",
-              "points": 0,
-              "minutes": 0
-            },
-            {
-              "name": "Erling Haaland",
-              "position": "FWD",
-              "points": 13,
-              "minutes": 90
-            },
-            {
-              "name": "Joao Pedro",
-              "position": "FWD",
-              "points": 9,
-              "minutes": 90
-            }
-          ]
-        },
-        {
           "id": "meta",
           "name": "Meta AI",
           "icon": "🧠",
           "formation": "3-4-3",
-          "points": 93,
+          "points": 94,
           "captain": "Erling Haaland",
           "vice": "Joao Pedro",
           "captain_activated": "Erling Haaland",
@@ -642,10 +642,10 @@
               "minutes": 90
             },
             {
-              "name": "Carlos Baleba",
-              "position": "MID",
+              "name": "Tyrick Mitchell",
+              "position": "DEF",
               "points": 0,
-              "minutes": 0
+              "minutes": 90
             },
             {
               "name": "Elliott Anderson",
@@ -666,10 +666,10 @@
               "minutes": 90
             },
             {
-              "name": "Sidiki Cherif",
-              "position": "FWD",
-              "points": 0,
-              "minutes": 0
+              "name": "Nobel Mendy",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 58
             }
           ]
         }
