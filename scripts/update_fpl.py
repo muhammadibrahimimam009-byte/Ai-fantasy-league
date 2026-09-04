@@ -164,6 +164,7 @@ def find_player(players, name, position=None):
     # --------------------------------------------------------
 
     for player in candidates:
+
         for official_name in player_names(player):
 
             if target == normalise(official_name):
@@ -206,6 +207,7 @@ def find_player(players, name, position=None):
         score += overlap * 25
 
         target_tokens = name_tokens(name)
+
         official_tokens = name_tokens(
             player_full_name(player)
         )
@@ -216,6 +218,7 @@ def find_player(players, name, position=None):
                 score += 40
 
         if score > 0:
+
             scored.append(
                 (score, player)
             )
@@ -478,6 +481,15 @@ def validate_transfer(previous_team, current_team):
                 f"does not match squad change."
             )
 
+    else:
+
+        if declared_out or declared_in:
+
+            raise Exception(
+                f"{current_team.get('name')} declares a "
+                f"transfer but the squad did not change."
+            )
+
     print(
         f"  ✓ Transfer check: "
         f"{current_team.get('name')} "
@@ -587,6 +599,10 @@ def calculate_team(
 
         bench.append(player)
 
+    # Keep the original starting XI separately.
+    # This is important for captain/vice-captain logic.
+    original_starting = list(starting)
+
     lineup = list(starting)
 
     # ========================================================
@@ -595,23 +611,31 @@ def calculate_team(
 
     if allow_autosubs:
 
+        # ----------------------------------------------------
+        # Goalkeeper substitution
+        # ----------------------------------------------------
+
         starting_gk = lineup[0]
         bench_gk = bench[0]
 
+        starting_gk_minutes = int(
+            starting_gk["stats"].get(
+                "minutes",
+                0
+            )
+        )
+
+        bench_gk_minutes = int(
+            bench_gk["stats"].get(
+                "minutes",
+                0
+            )
+        )
+
         if (
-            int(
-                starting_gk["stats"].get(
-                    "minutes",
-                    0
-                )
-            ) == 0
+            starting_gk_minutes == 0
             and
-            int(
-                bench_gk["stats"].get(
-                    "minutes",
-                    0
-                )
-            ) > 0
+            bench_gk_minutes > 0
         ):
 
             lineup[0] = bench_gk
@@ -622,7 +646,10 @@ def calculate_team(
                 f"{bench_gk['name']}"
             )
 
-        # Outfield automatic substitutions
+        # ----------------------------------------------------
+        # Outfield substitutions
+        # ----------------------------------------------------
+
         for substitute in bench[1:]:
 
             substitute_minutes = int(
@@ -716,16 +743,27 @@ def calculate_team(
         ""
     )
 
+    chip = str(
+        team.get(
+            "chip",
+            ""
+        )
+    ).strip().lower()
+
     captain = None
     vice = None
 
-    for player in lineup:
+    # Search the ORIGINAL starting XI.
+    # A captain who gets auto-subbed because he played 0
+    # minutes still causes the vice-captain to activate.
+    for player in original_starting:
 
         if (
             normalise(player["name"])
             ==
             normalise(captain_name)
         ):
+
             captain = player
 
         if (
@@ -733,9 +771,14 @@ def calculate_team(
             ==
             normalise(vice_name)
         ):
+
             vice = player
 
     captain_activated = None
+
+    # ========================================================
+    # CAPTAIN PLAYED
+    # ========================================================
 
     if captain:
 
@@ -755,15 +798,45 @@ def calculate_team(
 
         if captain_minutes > 0:
 
-            total += captain_points
+            # Normal captain:
+            # base points already counted once,
+            # so add another copy for 2x.
+            #
+            # Triple Captain:
+            # base points already counted once,
+            # so add TWO additional copies for 3x.
+            if chip == "triple captain":
 
-            captain_activated = captain["name"]
+                total += captain_points * 2
 
-            print(
-                f"  Captain: "
-                f"{captain['name']} "
-                f"+{captain_points}"
-            )
+                captain_activated = (
+                    f"{captain['name']} (TC)"
+                )
+
+                print(
+                    f"  Triple Captain: "
+                    f"{captain['name']} "
+                    f"+{captain_points * 2} "
+                    f"(3x total)"
+                )
+
+            else:
+
+                total += captain_points
+
+                captain_activated = (
+                    captain["name"]
+                )
+
+                print(
+                    f"  Captain: "
+                    f"{captain['name']} "
+                    f"+{captain_points}"
+                )
+
+        # ====================================================
+        # CAPTAIN DID NOT PLAY
+        # ====================================================
 
         elif vice:
 
@@ -783,6 +856,8 @@ def calculate_team(
 
             if vice_minutes > 0:
 
+                # Vice gets normal 2x.
+                # Triple Captain does NOT transfer.
                 total += vice_points
 
                 captain_activated = (
@@ -790,7 +865,7 @@ def calculate_team(
                 )
 
                 print(
-                    f"  Captain did not play."
+                    "  Captain did not play."
                 )
 
                 print(
@@ -804,8 +879,52 @@ def calculate_team(
         "captain": captain_name,
         "vice": vice_name,
         "captain_activated": captain_activated,
+        "chip": team.get("chip", "None"),
         "players": player_breakdown,
     }
+
+
+# ============================================================
+# GET HISTORICAL GAMEWEEK POINTS
+# ============================================================
+
+def get_gameweek_points(
+    old_gameweeks,
+    gameweek,
+    manager_id
+):
+
+    gw_data = old_gameweeks.get(
+        str(gameweek),
+        {}
+    )
+
+    if not isinstance(gw_data, dict):
+        return 0
+
+    scores = gw_data.get(
+        "scores",
+        []
+    )
+
+    if not isinstance(scores, list):
+        return 0
+
+    for result in scores:
+
+        if not isinstance(result, dict):
+            continue
+
+        if result.get("id") == manager_id:
+
+            return int(
+                result.get(
+                    "points",
+                    0
+                )
+            )
+
+    return 0
 
 
 # ============================================================
@@ -825,7 +944,9 @@ def main():
     # LOAD OFFICIAL FPL DATA
     # ========================================================
 
-    print("Downloading official FPL data...")
+    print(
+        "Downloading official FPL data..."
+    )
 
     bootstrap = get_api(
         "bootstrap-static/"
@@ -859,14 +980,17 @@ def main():
             current_event = event
             break
 
-    # Second: if there is a next GW, use the previous one
+    # Second: if there is a next GW,
+    # use the previous one
     if current_event is None:
 
         for event in events:
 
             if event.get("is_next"):
 
-                previous_id = event["id"] - 1
+                previous_id = (
+                    event["id"] - 1
+                )
 
                 current_event = next(
                     (
@@ -946,13 +1070,7 @@ def main():
     raw_current_squads = gameweeks[gw_key]
 
     # ========================================================
-    # IMPORTANT:
-    # Remove metadata such as:
-    #
-    # "locked": true
-    #
-    # Only dictionaries containing actual squad data
-    # are treated as AI teams.
+    # REMOVE METADATA
     # ========================================================
 
     current_squads = {
@@ -984,7 +1102,6 @@ def main():
         {}
     )
 
-    # Also remove metadata from previous GW
     if isinstance(previous_squads, dict):
 
         previous_squads = {
@@ -1001,7 +1118,9 @@ def main():
     # ========================================================
 
     print()
-    print("Validating AI squads...")
+    print(
+        "Validating AI squads..."
+    )
 
     for manager_id, team in current_squads.items():
 
@@ -1112,6 +1231,7 @@ def main():
             "captain_activated": (
                 result["captain_activated"]
             ),
+            "chip": result["chip"],
             "players": result["players"],
         })
 
@@ -1153,6 +1273,9 @@ def main():
         {}
     )
 
+    if not isinstance(old_gameweeks, dict):
+        old_gameweeks = {}
+
     # ========================================================
     # REPLACE ONLY CURRENT GAMEWEEK
     # ========================================================
@@ -1180,15 +1303,22 @@ def main():
         if not isinstance(gw_data, dict):
             continue
 
-        for result in gw_data.get(
+        scores = gw_data.get(
             "scores",
             []
-        ):
+        )
+
+        if not isinstance(scores, list):
+            continue
+
+        for result in scores:
 
             if not isinstance(result, dict):
                 continue
 
-            manager_id = result.get("id")
+            manager_id = result.get(
+                "id"
+            )
 
             if manager_id is None:
                 continue
@@ -1207,49 +1337,73 @@ def main():
             )
 
     # ========================================================
-    # BUILD LEADERBOARD
+    # BUILD DYNAMIC LEADERBOARD
+    #
+    # This now automatically creates:
+    #
+    # gw1
+    # gw2
+    # gw3
+    # gw4
+    # ...
+    #
+    # We will NOT need to edit this Python file every
+    # Gameweek.
     # ========================================================
 
     leaderboard = []
+
+    # Find every numeric Gameweek that exists
+    # in the historical results.
+    historical_gws = []
+
+    for gw_number in old_gameweeks.keys():
+
+        try:
+
+            number = int(gw_number)
+
+            if number > 0:
+                historical_gws.append(number)
+
+        except (TypeError, ValueError):
+
+            continue
+
+    historical_gws = sorted(
+        set(historical_gws)
+    )
 
     for result in results:
 
         manager_id = result["id"]
 
-        gw1_points = next(
-            (
-                r["points"]
-                for r in old_gameweeks
-                .get("1", {})
-                .get("scores", [])
-                if r.get("id") == manager_id
-            ),
-            0
-        )
-
-        gw2_points = next(
-            (
-                r["points"]
-                for r in old_gameweeks
-                .get("2", {})
-                .get("scores", [])
-                if r.get("id") == manager_id
-            ),
-            0
-        )
-
-        leaderboard.append({
+        entry = {
             "id": manager_id,
             "name": result["name"],
             "icon": result["icon"],
             "formation": result["formation"],
-            "gw1": gw1_points,
-            "gw2": gw2_points,
-            "total": cumulative.get(
-                manager_id,
-                0
-            ),
-        })
+        }
+
+        # Add every Gameweek dynamically.
+        for historical_gw in historical_gws:
+
+            entry[
+                f"gw{historical_gw}"
+            ] = get_gameweek_points(
+                old_gameweeks,
+                historical_gw,
+                manager_id
+            )
+
+        entry["total"] = cumulative.get(
+            manager_id,
+            0
+        )
+
+        leaderboard.append(
+            entry
+        )
 
     leaderboard.sort(
         key=lambda x: x["total"],
