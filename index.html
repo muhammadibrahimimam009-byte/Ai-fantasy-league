@@ -1,209 +1,459 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>AI Fantasy League — Premier Dashboard</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+AI Fantasy League — Premier Dashboard
+</title>
+
 
 <style>
 
+/* =========================================================
+   ROOT
+========================================================= */
+
 :root {
+
     --bg-dark:#060913;
+
     --card-bg:rgba(15,23,42,.78);
+
     --card-border:rgba(255,255,255,.08);
+
     --accent-cyan:#38bdf8;
+
     --accent-purple:#c084fc;
+
     --accent-gold:#facc15;
+
     --text-main:#f8fafc;
+
     --text-muted:#94a3b8;
+
     --success-green:#22c55e;
+
 }
+
+
+/* =========================================================
+   GLOBAL
+========================================================= */
 
 * {
+
     box-sizing:border-box;
+
     margin:0;
+
     padding:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+
 }
+
 
 body {
+
     background:#060913;
+
     background-image:
-        radial-gradient(at 0% 0%,rgba(56,189,248,.15),transparent 50%),
-        radial-gradient(at 100% 100%,rgba(192,132,252,.1),transparent 50%);
+
+        radial-gradient(
+            at 0% 0%,
+            rgba(56,189,248,.15),
+            transparent 50%
+        ),
+
+        radial-gradient(
+            at 100% 100%,
+            rgba(192,132,252,.1),
+            transparent 50%
+        );
+
     background-attachment:fixed;
+
     color:var(--text-main);
+
     padding:20px 12px;
+
     min-height:100vh;
+
 }
+
 
 .container {
+
     max-width:900px;
+
     margin:auto;
+
 }
+
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 header {
+
     margin-bottom:24px;
+
 }
+
 
 .sub-header {
+
     font-size:.72rem;
+
     font-weight:800;
+
     color:var(--accent-cyan);
+
     text-transform:uppercase;
+
     letter-spacing:.12em;
+
     margin-bottom:6px;
+
     display:inline-block;
+
     background:rgba(56,189,248,.1);
+
     padding:3px 10px;
+
     border-radius:6px;
+
 }
+
 
 h1 {
+
     font-size:2.2rem;
+
     font-weight:900;
-    background:linear-gradient(135deg,#fff 30%,#38bdf8 70%,#c084fc);
+
+    background:
+        linear-gradient(
+            135deg,
+            #fff 30%,
+            #38bdf8 70%,
+            #c084fc
+        );
+
     -webkit-background-clip:text;
+
     -webkit-text-fill-color:transparent;
+
     margin-bottom:8px;
+
 }
+
 
 .description {
+
     font-size:.88rem;
+
     color:var(--text-muted);
+
     margin-bottom:18px;
+
 }
+
 
 .pill-container {
+
     display:flex;
+
     flex-wrap:wrap;
+
     gap:8px;
+
 }
+
 
 .pill {
-    background:rgba(30,41,59,.6);
-    border:1px solid var(--card-border);
+
+    background:
+        rgba(30,41,59,.6);
+
+    border:
+        1px solid
+        var(--card-border);
+
     padding:6px 14px;
+
     border-radius:999px;
+
     font-size:.78rem;
+
     font-weight:600;
+
 }
+
+
+/* =========================================================
+   CARDS
+========================================================= */
 
 .card {
+
     background:var(--card-bg);
+
     backdrop-filter:blur(12px);
-    border:1px solid var(--card-border);
+
+    border:
+        1px solid
+        var(--card-border);
+
     border-radius:18px;
+
     padding:20px;
+
     margin-bottom:22px;
-    box-shadow:0 10px 30px -10px #0008;
+
+    box-shadow:
+        0 10px 30px -10px #0008;
+
 }
+
 
 .card-title {
+
     font-size:1.15rem;
+
     font-weight:800;
+
     margin-bottom:16px;
+
 }
+
+
+/* =========================================================
+   TABLES
+========================================================= */
 
 .table-wrapper {
+
     overflow-x:auto;
+
     border-radius:12px;
+
 }
+
 
 table {
+
     width:100%;
+
     border-collapse:collapse;
+
+    min-width:max-content;
+
 }
+
 
 th {
+
     font-size:.72rem;
+
     text-transform:uppercase;
+
     color:var(--text-muted);
+
     padding:12px 14px;
-    background:rgba(15,23,42,.9);
+
+    background:
+        rgba(15,23,42,.9);
+
     text-align:left;
+
+    white-space:nowrap;
+
 }
+
 
 td {
+
     padding:14px;
-    border-bottom:1px solid rgba(255,255,255,.04);
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.04);
+
+    white-space:nowrap;
+
 }
+
 
 .rank-badge {
+
     display:inline-flex;
+
     align-items:center;
+
     justify-content:center;
+
     width:28px;
+
     height:28px;
+
     border-radius:7px;
-    background:rgba(255,255,255,.05);
+
+    background:
+        rgba(255,255,255,.05);
+
     color:var(--text-muted);
+
     font-weight:800;
+
 }
+
 
 .rank-1 {
-    background:rgba(250,204,21,.2);
+
+    background:
+        rgba(250,204,21,.2);
+
     color:var(--accent-gold);
+
 }
+
 
 .rank-2 {
-    background:rgba(226,232,240,.15);
+
+    background:
+        rgba(226,232,240,.15);
+
     color:#f1f5f9;
+
 }
+
 
 .rank-3 {
-    background:rgba(217,119,6,.2);
+
+    background:
+        rgba(217,119,6,.2);
+
     color:#f97316;
+
 }
+
 
 .points {
+
     color:var(--accent-cyan);
+
     font-weight:900;
+
 }
+
+
+/* =========================================================
+   TABS
+========================================================= */
 
 .tabs {
+
     display:flex;
+
     gap:8px;
+
     overflow-x:auto;
+
     padding-bottom:4px;
+
     margin-bottom:18px;
+
 }
+
 
 .tab {
-    background:rgba(30,41,59,.6);
-    border:1px solid var(--card-border);
+
+    background:
+        rgba(30,41,59,.6);
+
+    border:
+        1px solid
+        var(--card-border);
+
     color:var(--text-muted);
+
     padding:9px 14px;
+
     border-radius:10px;
+
     cursor:pointer;
+
     font-weight:700;
+
     white-space:nowrap;
+
 }
+
 
 .tab.active {
-    background:linear-gradient(
-        135deg,
-        rgba(56,189,248,.25),
-        rgba(192,132,252,.2)
-    );
-    border-color:var(--accent-cyan);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(56,189,248,.25),
+            rgba(192,132,252,.2)
+        );
+
+    border-color:
+        var(--accent-cyan);
+
     color:#fff;
+
 }
+
 
 .hidden {
+
     display:none;
+
 }
+
+
+/* =========================================================
+   MANAGER HEADER
+========================================================= */
 
 .manager-header {
+
     display:flex;
+
     justify-content:space-between;
+
     align-items:center;
+
     margin-bottom:12px;
+
 }
 
+
+/* =========================================================
+   PITCH
+========================================================= */
+
 .pitch {
+
     background:
+
         repeating-linear-gradient(
             0deg,
             #14532d 0,
@@ -212,130 +462,304 @@ td {
             #166534 80px
         );
 
-    border:2px solid rgba(255,255,255,.15);
+    border:
+        2px solid
+        rgba(255,255,255,.15);
+
     border-radius:16px;
+
     padding:20px 10px;
+
     min-height:500px;
+
     display:flex;
+
     flex-direction:column;
+
     justify-content:space-between;
+
 }
+
 
 .pitch-row {
+
     display:flex;
+
     justify-content:space-around;
+
     align-items:center;
+
     min-height:80px;
+
 }
+
 
 .player {
+
     width:90px;
+
     text-align:center;
+
 }
+
 
 .player-circle {
+
     width:38px;
+
     height:38px;
+
     margin:auto;
+
     border-radius:50%;
+
     background:#0f172a;
-    border:2px solid var(--accent-cyan);
+
+    border:
+        2px solid
+        var(--accent-cyan);
+
     display:flex;
+
     align-items:center;
+
     justify-content:center;
+
     font-size:.68rem;
+
     font-weight:900;
+
 }
+
 
 .player-name {
+
     margin-top:5px;
+
     background:#0f172ae8;
+
     border-radius:6px;
+
     padding:3px 5px;
+
     font-size:.66rem;
+
     font-weight:700;
+
     white-space:nowrap;
+
     overflow:hidden;
+
     text-overflow:ellipsis;
+
 }
+
 
 .player-points {
+
     display:inline-block;
+
     margin-top:3px;
+
     background:var(--success-green);
+
     color:#06120b;
+
     border-radius:4px;
+
     padding:1px 6px;
+
     font-size:.65rem;
+
     font-weight:900;
+
 }
+
 
 .captain {
-    border-color:var(--accent-gold);
+
+    border-color:
+        var(--accent-gold);
+
 }
+
+
+/* =========================================================
+   BENCH
+========================================================= */
 
 .bench {
-    background:rgba(15,23,42,.8);
-    border:1px solid var(--card-border);
+
+    background:
+        rgba(15,23,42,.8);
+
+    border:
+        1px solid
+        var(--card-border);
+
     border-radius:12px;
+
     margin-top:14px;
+
     padding:12px;
+
 }
+
 
 .bench-title {
+
     color:var(--accent-gold);
+
     font-size:.72rem;
+
     font-weight:800;
+
     text-transform:uppercase;
+
     margin-bottom:8px;
+
 }
+
 
 .bench-grid {
+
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+
+    grid-template-columns:
+        repeat(4,1fr);
+
     gap:8px;
+
 }
+
 
 .bench-player {
+
     padding:8px;
-    background:rgba(255,255,255,.03);
+
+    background:
+        rgba(255,255,255,.03);
+
     border-radius:8px;
+
     font-size:.72rem;
+
     text-align:center;
+
 }
+
+
+/* =========================================================
+   STATUS
+========================================================= */
 
 .status {
+
     color:var(--success-green);
+
     font-weight:800;
+
     margin-bottom:8px;
+
 }
 
+
 .small {
+
     color:var(--text-muted);
+
     font-size:.76rem;
+
 }
+
+
+/* =========================================================
+   CHIP BADGE
+========================================================= */
+
+.chip-badge {
+
+    display:inline-block;
+
+    margin-top:6px;
+
+    padding:3px 8px;
+
+    border-radius:6px;
+
+    font-size:.68rem;
+
+    font-weight:800;
+
+    background:
+        rgba(250,204,21,.15);
+
+    color:var(--accent-gold);
+
+    border:
+        1px solid
+        rgba(250,204,21,.25);
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
 
 @media(max-width:700px) {
 
     .bench-grid {
-        grid-template-columns:repeat(2,1fr);
+
+        grid-template-columns:
+            repeat(2,1fr);
+
     }
+
 
     .player {
+
         width:70px;
+
     }
 
+
     .player-name {
+
         font-size:.6rem;
+
     }
+
+
+    h1 {
+
+        font-size:1.9rem;
+
+    }
+
+
+    .card {
+
+        padding:15px;
+
+    }
+
 }
 
 </style>
+
 </head>
+
 
 <body>
 
+
 <div class="container">
+
+
+<!-- =======================================================
+     HEADER
+======================================================= -->
 
 <header>
 
@@ -343,205 +767,462 @@ td {
 2026/27 · AI ANALYST COMPETITION
 </div>
 
-<h1>AI Fantasy League</h1>
+
+<h1>
+AI Fantasy League
+</h1>
+
 
 <p class="description">
+
 GPT-5.6 Luna vs Gemini vs Meta AI vs Grok.
 Official FPL player points determine the results.
+
 </p>
+
 
 <div class="pill-container">
 
-<span class="pill" id="current-gw">
-GW2
+
+<span
+    class="pill"
+    id="current-gw"
+>
+GW—
 </span>
+
 
 <span class="pill">
 📡 Automatic FPL data
 </span>
 
+
 <span class="pill">
 🏆 Live leaderboard
 </span>
+
 
 </div>
 
 </header>
 
 
-<!-- LEADERBOARD -->
+<!-- =======================================================
+     LEADERBOARD
+======================================================= -->
 
 <div class="card">
+
 
 <div class="card-title">
 🏆 Overall Leaderboard
 </div>
 
+
 <div class="table-wrapper">
+
 
 <table>
 
-<thead>
+<thead id="leaderboard-head">
 
 <tr>
+
 <th>#</th>
+
 <th>AI Competitor</th>
-<th>GW1</th>
-<th>GW2</th>
+
 <th>TOTAL</th>
+
 </tr>
 
 </thead>
 
+
 <tbody id="leaderboard">
+
 <tr>
-<td colspan="5">
+
+<td colspan="3">
 Loading...
 </td>
+
 </tr>
+
 </tbody>
 
 </table>
 
-</div>
 
 </div>
 
+</div>
 
-<!-- GAMEWEEK HISTORY -->
+
+<!-- =======================================================
+     GAMEWEEK HISTORY
+======================================================= -->
 
 <div class="card">
+
 
 <div class="card-title">
 📅 Gameweek Results
 </div>
 
-<div class="tabs" id="gw-tabs"></div>
+
+<div
+    class="tabs"
+    id="gw-tabs"
+></div>
+
 
 <div id="gameweek-results"></div>
+
 
 </div>
 
 
-<!-- SQUADS -->
+<!-- =======================================================
+     SQUAD INSPECTOR
+======================================================= -->
 
 <div class="card">
+
 
 <div class="card-title">
 ⚽ Squad Inspector
 </div>
 
-<div class="tabs" id="manager-tabs"></div>
+
+<div
+    class="tabs"
+    id="manager-tabs"
+></div>
+
 
 <div class="manager-header">
 
+
 <div id="manager-info"></div>
+
 
 <div id="manager-points"></div>
 
+
 </div>
 
-<div class="pitch" id="pitch"></div>
+
+<div
+    class="pitch"
+    id="pitch"
+></div>
+
 
 <div class="bench">
+
 
 <div class="bench-title">
 Substitutes
 </div>
 
-<div class="bench-grid" id="bench"></div>
+
+<div
+    class="bench-grid"
+    id="bench"
+></div>
+
 
 </div>
 
+
 </div>
 
 
-<!-- STATUS -->
+<!-- =======================================================
+     STATUS
+======================================================= -->
 
 <div class="card">
+
 
 <div class="card-title">
 📡 Data Status
 </div>
 
+
 <div class="status">
 ● AUTOMATED
 </div>
+
 
 <div id="status">
 Loading...
 </div>
 
-<div class="small" id="updated">
-</div>
+
+<div
+    class="small"
+    id="updated"
+></div>
+
 
 </div>
+
 
 </div>
 
 
 <script>
 
+
+// ==========================================================
+// GLOBAL STATE
+// ==========================================================
+
 let squads = {};
+
 let results = {};
 
-let currentGW = 2;
+let currentGW = 1;
+
 let activeManager = "gpt";
 
 
+// ==========================================================
+// LOAD DATA
+// ==========================================================
+
 async function loadData() {
 
-    const cache =
-        "?v=" +
-        Date.now();
+    try {
 
-    const [
-        squadsResponse,
-        resultsResponse
-    ] = await Promise.all([
+        const cache =
+            "?v=" +
+            Date.now();
 
-        fetch(
-            "data/squads.json"
-            + cache
-        ),
 
-        fetch(
-            "data/results.json"
-            + cache
-        )
-    ]);
+        const [
+            squadsResponse,
+            resultsResponse
+        ] = await Promise.all([
 
-    squads =
-        await squadsResponse.json();
+            fetch(
+                "data/squads.json"
+                + cache
+            ),
 
-    results =
-        await resultsResponse.json();
+            fetch(
+                "data/results.json"
+                + cache
+            )
 
-    currentGW =
-        Number(
-            squads.current_gameweek
-        );
+        ]);
 
-    if (!squads.gameweeks[currentGW]) {
-        currentGW = 1;
+
+        if (!squadsResponse.ok) {
+
+            throw new Error(
+                "Could not load squads.json"
+            );
+
+        }
+
+
+        if (!resultsResponse.ok) {
+
+            throw new Error(
+                "Could not load results.json"
+            );
+
+        }
+
+
+        squads =
+            await squadsResponse.json();
+
+
+        results =
+            await resultsResponse.json();
+
+
+        // ==================================================
+        // CURRENT GAMEWEEK
+        // ==================================================
+
+        currentGW =
+            Number(
+                squads.current_gameweek
+            );
+
+
+        if (
+            !squads.gameweeks
+            ||
+            !squads.gameweeks[currentGW]
+        ) {
+
+            currentGW = 1;
+
+        }
+
+
+        // ==================================================
+        // RESET MANAGER IF NECESSARY
+        // ==================================================
+
+        const current =
+            getCurrentSquads();
+
+
+        const validManagers =
+            getManagerEntries(current);
+
+
+        if (
+            !validManagers.some(
+                item =>
+                    item.id === activeManager
+            )
+        ) {
+
+            if (validManagers.length > 0) {
+
+                activeManager =
+                    validManagers[0].id;
+
+            }
+
+        }
+
+
+        // ==================================================
+        // RENDER EVERYTHING
+        // ==================================================
+
+        renderLeaderboard();
+
+        renderGameweekTabs();
+
+        renderGameweek(currentGW);
+
+        renderManagerTabs();
+
+        renderManager();
+
+        renderStatus();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById(
+            "leaderboard"
+        ).innerHTML = `
+
+<tr>
+
+<td colspan="10">
+
+Unable to load league data.
+
+<br><br>
+
+<span class="small">
+${error.message}
+</span>
+
+</td>
+
+</tr>
+
+`;
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Data loading error.";
+
     }
 
-    renderLeaderboard();
-    renderGameweekTabs();
-    renderGameweek(currentGW);
-    renderManagerTabs();
-    renderManager();
-    renderStatus();
 }
 
+
+// ==========================================================
+// CURRENT SQUADS
+// ==========================================================
 
 function getCurrentSquads() {
 
-    return squads.gameweeks[
-        currentGW
-    ];
+    return (
+        squads.gameweeks?.[
+            currentGW
+        ] || {}
+    );
+
 }
 
+
+// ==========================================================
+// GET ONLY REAL MANAGERS
+//
+// This prevents things like:
+//
+// "locked": true
+//
+// from becoming a manager tab.
+// ==========================================================
+
+function getManagerEntries(
+    squadGroup
+) {
+
+    if (
+        !squadGroup
+        ||
+        typeof squadGroup !== "object"
+    ) {
+
+        return [];
+
+    }
+
+
+    return Object.entries(
+        squadGroup
+    )
+
+    .filter(
+        ([id,team]) =>
+
+            team
+            &&
+            typeof team === "object"
+            &&
+            !Array.isArray(team)
+            &&
+            Array.isArray(team.starting)
+            &&
+            Array.isArray(team.bench)
+    )
+
+    .map(
+        ([id,team]) => ({
+
+            id,
+            team
+
+        })
+    );
+
+}
+
+
+// ==========================================================
+// MANAGER RESULT
+// ==========================================================
 
 function getManagerResult(
     managerId,
@@ -549,16 +1230,33 @@ function getManagerResult(
 ) {
 
     const data =
-        results.gameweeks?.[gw];
+        results.gameweeks?.[
+            String(gw)
+        ];
 
-    if (!data) return null;
+
+    if (
+        !data
+        ||
+        !Array.isArray(data.scores)
+    ) {
+
+        return null;
+
+    }
+
 
     return data.scores.find(
         item =>
             item.id === managerId
     );
+
 }
 
+
+// ==========================================================
+// GAMEWEEK SCORE
+// ==========================================================
 
 function getGWScore(
     managerId,
@@ -571,93 +1269,228 @@ function getGWScore(
             gw
         );
 
+
     return result
         ? result.points
         : "—";
+
 }
 
 
+// ==========================================================
+// AVAILABLE GAMEWEEKS
+// ==========================================================
+
+function getAvailableGameweeks() {
+
+    return Object.keys(
+        results.gameweeks || {}
+    )
+
+    .map(
+        gw => Number(gw)
+    )
+
+    .filter(
+        gw =>
+            Number.isFinite(gw)
+            &&
+            gw > 0
+    )
+
+    .sort(
+        (a,b) =>
+            a - b
+    );
+
+}
+
+
+// ==========================================================
+// LEADERBOARD HEADER
+//
+// Automatically creates:
+//
+// GW1 | GW2 | GW3 | GW4 | TOTAL
+// ==========================================================
+
+function renderLeaderboardHeader() {
+
+    const head =
+        document.getElementById(
+            "leaderboard-head"
+        );
+
+
+    const gameweeks =
+        getAvailableGameweeks();
+
+
+    head.innerHTML = `
+
+<tr>
+
+<th>#</th>
+
+<th>AI Competitor</th>
+
+${gameweeks.map(
+    gw => `
+<th>GW${gw}</th>
+`
+).join("")}
+
+<th>TOTAL</th>
+
+</tr>
+
+`;
+
+}
+
+
+// ==========================================================
+// LEADERBOARD
+// ==========================================================
+
 function renderLeaderboard() {
+
+    renderLeaderboardHeader();
+
 
     const body =
         document.getElementById(
             "leaderboard"
         );
 
-    const sorted =
-        [...results.leaderboard]
-        .sort(
-            (a,b) =>
-                b.total - a.total
-        );
 
-    body.innerHTML =
-        sorted.map(
-            (team,index) => {
+    if (
+        !Array.isArray(
+            results.leaderboard
+        )
+    ) {
 
-                const gw1 =
-                    getGWScore(
-                        team.id,
-                        1
-                    );
+        body.innerHTML = `
 
-                const gw2 =
-                    getGWScore(
-                        team.id,
-                        2
-                    );
+<tr>
 
-                let rankClass = "";
-
-                if (index === 0)
-                    rankClass = "rank-1";
-
-                if (index === 1)
-                    rankClass = "rank-2";
-
-                if (index === 2)
-                    rankClass = "rank-3";
-
-                return `
-
-<tr onclick="selectManager('${team.id}')"
-    style="cursor:pointer">
-
-<td>
-
-<span class="rank-badge ${rankClass}">
-${index + 1}
-</span>
-
-</td>
-
-<td>
-<strong>
-${team.icon}
-${team.name}
-</strong>
-</td>
-
-<td>
-${gw1}
-</td>
-
-<td>
-${gw2}
-</td>
-
-<td class="points">
-${team.total}
+<td colspan="10">
+No leaderboard data yet.
 </td>
 
 </tr>
 
 `;
 
+        return;
+
+    }
+
+
+    const sorted =
+        [...results.leaderboard]
+        .sort(
+            (a,b) =>
+                Number(b.total || 0)
+                -
+                Number(a.total || 0)
+        );
+
+
+    const gameweeks =
+        getAvailableGameweeks();
+
+
+    body.innerHTML =
+        sorted.map(
+            (team,index) => {
+
+                let rankClass = "";
+
+
+                if (index === 0)
+                    rankClass = "rank-1";
+
+
+                if (index === 1)
+                    rankClass = "rank-2";
+
+
+                if (index === 2)
+                    rankClass = "rank-3";
+
+
+                return `
+
+<tr
+    onclick="selectManager('${team.id}')"
+    style="cursor:pointer"
+>
+
+
+<td>
+
+<span
+    class="rank-badge ${rankClass}"
+>
+
+${index + 1}
+
+</span>
+
+</td>
+
+
+<td>
+
+<strong>
+
+${team.icon || ""}
+
+${team.name || team.id}
+
+</strong>
+
+</td>
+
+
+${gameweeks.map(
+    gw => `
+
+<td>
+
+${getGWScore(
+    team.id,
+    gw
+)}
+
+</td>
+
+`
+).join("")}
+
+
+<td class="points">
+
+${team.total ?? 0}
+
+</td>
+
+
+</tr>
+
+`;
+
             }
-        ).join("");
+        )
+        .join("");
+
 }
 
+
+// ==========================================================
+// GAMEWEEK TABS
+// ==========================================================
 
 function renderGameweekTabs() {
 
@@ -666,34 +1499,45 @@ function renderGameweekTabs() {
             "gw-tabs"
         );
 
+
     const available =
-        Object.keys(
-            results.gameweeks || {}
-        ).sort(
-            (a,b) => Number(a)-Number(b)
-        );
+        getAvailableGameweeks();
+
 
     tabs.innerHTML =
         available.map(
             gw => `
 
 <button
-class="tab ${Number(gw) === currentGW ? "active":""}"
-onclick="renderGameweek(${gw})">
+    class="tab ${
+        Number(gw) === currentGW
+            ? "active"
+            : ""
+    }"
+    onclick="renderGameweek(${gw})"
+>
 
 GW${gw}
 
 </button>
 
 `
-        ).join("");
+        )
+        .join("");
+
 }
 
+
+// ==========================================================
+// GAMEWEEK RESULT
+// ==========================================================
 
 function renderGameweek(gw) {
 
     document
-        .querySelectorAll("#gw-tabs .tab")
+        .querySelectorAll(
+            "#gw-tabs .tab"
+        )
         .forEach(
             button => {
 
@@ -701,10 +1545,12 @@ function renderGameweek(gw) {
                     "active"
                 );
 
+
                 if (
                     button.textContent
                     .trim()
-                    === `GW${gw}`
+                    ===
+                    `GW${gw}`
                 ) {
 
                     button.classList.add(
@@ -716,42 +1562,73 @@ function renderGameweek(gw) {
             }
         );
 
+
     const data =
-        results.gameweeks?.[gw];
+        results.gameweeks?.[
+            String(gw)
+        ];
+
 
     const container =
         document.getElementById(
             "gameweek-results"
         );
 
-    if (!data) {
+
+    if (
+        !data
+        ||
+        !Array.isArray(data.scores)
+    ) {
 
         container.innerHTML =
             "<p>No result yet.</p>";
 
         return;
+
     }
+
 
     const sorted =
         [...data.scores]
         .sort(
             (a,b) =>
-                b.points - a.points
+                Number(b.points || 0)
+                -
+                Number(a.points || 0)
         );
 
+
     container.innerHTML = `
+
+<div class="small"
+     style="margin-bottom:12px">
+
+GW${gw}
+·
+${data.status || ""}
+
+</div>
+
 
 <table>
 
 <thead>
 
 <tr>
+
 <th>AI</th>
+
 <th>Points</th>
+
 <th>Captain</th>
+
+<th>Chip</th>
+
 </tr>
 
 </thead>
+
 
 <tbody>
 
@@ -760,25 +1637,68 @@ ${sorted.map(
 
 <tr>
 
+
 <td>
-${team.icon}
+
+${team.icon || ""}
+
 <strong>
-${team.name}
+
+${team.name || team.id}
+
 </strong>
+
 </td>
+
 
 <td class="points">
-${team.points}
+
+${team.points ?? 0}
+
 </td>
 
+
 <td>
-${team.captain_activated || team.captain}
+
+${
+    team.captain_activated
+    ||
+    team.captain
+    ||
+    "—"
+}
+
 </td>
+
+
+<td>
+
+${
+    team.chip
+    &&
+    String(team.chip)
+        .toLowerCase()
+        !== "none"
+
+    ?
+
+    `<span class="chip-badge">
+    ${team.chip}
+    </span>`
+
+    :
+
+    "—"
+}
+
+</td>
+
 
 </tr>
 
 `
 ).join("")}
+
 
 </tbody>
 
@@ -789,6 +1709,10 @@ ${team.captain_activated || team.captain}
 }
 
 
+// ==========================================================
+// MANAGER TABS
+// ==========================================================
+
 function renderManagerTabs() {
 
     const tabs =
@@ -796,58 +1720,86 @@ function renderManagerTabs() {
             "manager-tabs"
         );
 
+
     const current =
         getCurrentSquads();
 
+
+    const managers =
+        getManagerEntries(
+            current
+        );
+
+
     tabs.innerHTML =
-        Object.keys(current)
-        .map(
-            key => {
-
-                const team =
-                    current[key];
-
-                return `
+        managers.map(
+            ({id,team}) => `
 
 <button
-class="tab ${
-    key === activeManager
-    ? "active"
-    : ""
-}"
-onclick="selectManager('${key}')">
+    class="tab ${
+        id === activeManager
+            ? "active"
+            : ""
+    }"
+    onclick="selectManager('${id}')"
+>
 
-${team.icon}
-${team.name}
+${team.icon || ""}
+
+${team.name || id}
 
 </button>
 
-`;
+`
+        )
+        .join("");
 
-            }
-        ).join("");
 }
 
+
+// ==========================================================
+// SELECT MANAGER
+// ==========================================================
 
 function selectManager(key) {
 
     activeManager =
         key;
 
+
     renderManagerTabs();
+
     renderManager();
+
 }
 
+
+// ==========================================================
+// MANAGER INSPECTOR
+// ==========================================================
 
 function renderManager() {
 
     const current =
         getCurrentSquads();
 
-    const team =
-        current[activeManager];
 
-    if (!team) return;
+    const team =
+        current[
+            activeManager
+        ];
+
+
+    if (
+        !team
+        ||
+        typeof team !== "object"
+    ) {
+
+        return;
+
+    }
+
 
     const result =
         getManagerResult(
@@ -855,10 +1807,16 @@ function renderManager() {
             currentGW
         );
 
+
     const points =
         result
-        ? result.points
-        : "—";
+            ? result.points
+            : "—";
+
+
+    // ======================================================
+    // MANAGER INFO
+    // ======================================================
 
     document.getElementById(
         "manager-info"
@@ -866,59 +1824,120 @@ function renderManager() {
 
 <div>
 
+
 <h3>
-${team.icon}
-${team.name}
+
+${team.icon || ""}
+
+${team.name || activeManager}
+
 </h3>
+
 
 <div class="small">
 
 GW${currentGW}
+
 ·
-${team.formation}
+
+${team.formation || ""}
+
 ·
+
 Captain:
-<strong>${team.captain}</strong>
+<strong>
+${team.captain || "—"}
+</strong>
+
 ·
+
 Vice:
-<strong>${team.vice}</strong>
+<strong>
+${team.vice || "—"}
+</strong>
 
 </div>
+
+
+${
+    team.chip
+    &&
+    String(team.chip)
+        .toLowerCase()
+        !== "none"
+
+    ?
+
+    `<div class="chip-badge">
+    🎯 ${team.chip}
+    </div>`
+
+    :
+
+    ""
+}
+
 
 </div>
 
 `;
+
+
+    // ======================================================
+    // POINTS
+    // ======================================================
 
     document.getElementById(
         "manager-points"
     ).innerHTML = `
 
-<div style="text-align:right">
+<div
+    style="text-align:right"
+>
+
 
 <div class="small">
+
 GW${currentGW} Points
+
 </div>
 
-<div class="points"
-     style="font-size:1.4rem">
+
+<div
+    class="points"
+    style="font-size:1.4rem"
+>
 
 ${points}
 
 </div>
 
+
 </div>
 
 `;
 
+
+    // ======================================================
+    // PLAYER DATA
+    // ======================================================
+
     const resultPlayers =
         result?.players || [];
 
+
     const groups = {
-        GK: [],
-        DEF: [],
-        MID: [],
-        FWD: []
+
+        GK:[],
+
+        DEF:[],
+
+        MID:[],
+
+        FWD:[]
+
     };
+
 
     team.starting.forEach(
         player => {
@@ -928,84 +1947,119 @@ ${points}
                 position
             ] = player;
 
+
             const stats =
                 resultPlayers.find(
                     x =>
                         x.name
-                        === name
-                ) || {
-                    points: 0,
-                    minutes: 0
+                        ===
+                        name
+                )
+                ||
+                {
+                    points:0,
+                    minutes:0
                 };
+
 
             groups[
                 position
             ].push({
+
                 name,
+
                 position,
+
                 stats,
+
                 captain:
                     name
-                    === team.captain,
+                    ===
+                    team.captain,
+
                 vice:
                     name
-                    === team.vice
+                    ===
+                    team.vice
+
             });
 
         }
     );
+
+
+    // ======================================================
+    // PITCH
+    // ======================================================
 
     const pitch =
         document.getElementById(
             "pitch"
         );
 
+
     pitch.innerHTML =
         ["GK","DEF","MID","FWD"]
+
         .map(
             position => `
 
 <div class="pitch-row">
 
 ${groups[position]
+
     .map(
         player => `
 
 <div class="player">
 
-<div class="player-circle ${
-    player.captain
-        ? "captain"
-        : ""
-}">
+
+<div
+    class="player-circle ${
+        player.captain
+            ? "captain"
+            : ""
+    }"
+>
+
 
 ${player.position}
 
+
 ${
-player.captain
-? " C"
-: player.vice
-? " VC"
-: ""
+    player.captain
+
+        ? " C"
+
+        : player.vice
+
+            ? " VC"
+
+            : ""
 }
+
 
 </div>
 
+
 <div
-class="player-name"
-title="${player.name}"
+    class="player-name"
+    title="${player.name}"
 >
 
 ${player.name}
 
 </div>
 
+
 <div class="player-points">
 
 ${player.stats.points}
+
 pts
 
 </div>
+
 
 </div>
 
@@ -1013,37 +2067,60 @@ pts
     )
     .join("")}
 
+
 </div>
 
 `
-        ).join("");
+        )
+        .join("");
+
+
+    // ======================================================
+    // BENCH
+    // ======================================================
 
     const bench =
         document.getElementById(
             "bench"
         );
 
+
     bench.innerHTML =
         team.bench
+
         .map(
             ([name,position]) => `
 
 <div class="bench-player">
 
+
 <div class="small">
+
 ${position}
+
 </div>
 
+
 <strong>
+
 ${name}
+
 </strong>
+
 
 </div>
 
 `
-        ).join("");
+        )
+
+        .join("");
+
 }
 
+
+// ==========================================================
+// STATUS
+// ==========================================================
 
 function renderStatus() {
 
@@ -1051,31 +2128,46 @@ function renderStatus() {
         "current-gw"
     ).textContent =
         "GW"
-        + currentGW;
+        +
+        currentGW;
+
 
     document.getElementById(
         "status"
     ).textContent =
         results.status
-        || "Waiting for official FPL data.";
+        ||
+        "Waiting for official FPL data.";
+
 
     if (results.updated_at) {
 
         document.getElementById(
             "updated"
         ).textContent =
+
             "Last updated: "
-            + new Date(
+
+            +
+
+            new Date(
                 results.updated_at
             ).toLocaleString();
 
     }
+
 }
 
+
+// ==========================================================
+// START
+// ==========================================================
 
 loadData();
 
 </script>
 
+
 </body>
-</html>
+
+    </html>
