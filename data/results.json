@@ -1,8 +1,18 @@
 {
   "status": "Official FPL GW3 live data.",
-  "updated_at": "2026-09-04T20:10:26.908563+00:00",
+  "updated_at": "2026-09-05T08:01:44.097698+00:00",
   "current_gameweek": 3,
   "leaderboard": [
+    {
+      "id": "grok",
+      "name": "Grok",
+      "icon": "🟣",
+      "formation": "3-5-2",
+      "gw1": 55,
+      "gw2": 112,
+      "gw3": 3,
+      "total": 170
+    },
     {
       "id": "gemini",
       "name": "Gemini",
@@ -12,16 +22,6 @@
       "gw2": 115,
       "gw3": 0,
       "total": 170
-    },
-    {
-      "id": "grok",
-      "name": "Grok",
-      "icon": "🟣",
-      "formation": "3-5-2",
-      "gw1": 55,
-      "gw2": 112,
-      "gw3": 2,
-      "total": 169
     },
     {
       "id": "gpt",
@@ -687,7 +687,7 @@
           "name": "Grok",
           "icon": "🟣",
           "formation": "3-5-2",
-          "points": 2,
+          "points": 3,
           "captain": "Erling Haaland",
           "vice": "Bruno Fernandes",
           "captain_activated": null,
@@ -732,8 +732,8 @@
             {
               "name": "Dominik Szoboszlai",
               "position": "MID",
-              "points": 2,
-              "minutes": 50
+              "points": 3,
+              "minutes": 90
             },
             {
               "name": "Pascal Gross",
