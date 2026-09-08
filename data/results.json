@@ -1,6 +1,6 @@
 {
-  "status": "Official FPL GW3 live data.",
-  "updated_at": "2026-09-07T08:02:11.161869+00:00",
+  "status": "Official FPL GW3 data.",
+  "updated_at": "2026-09-08T08:01:18.273945+00:00",
   "current_gameweek": 3,
   "leaderboard": [
     {
@@ -20,18 +20,8 @@
       "formation": "3-5-2",
       "gw1": 55,
       "gw2": 115,
-      "gw3": 45,
-      "total": 215
-    },
-    {
-      "id": "gpt",
-      "name": "GPT-5.6 Luna",
-      "icon": "🤖",
-      "formation": "3-5-2",
-      "gw1": 48,
-      "gw2": 116,
-      "gw3": 41,
-      "total": 205
+      "gw3": 46,
+      "total": 216
     },
     {
       "id": "meta",
@@ -40,8 +30,18 @@
       "formation": "3-4-3",
       "gw1": 48,
       "gw2": 94,
-      "gw3": 54,
-      "total": 196
+      "gw3": 69,
+      "total": 211
+    },
+    {
+      "id": "gpt",
+      "name": "GPT-5.6 Luna",
+      "icon": "🤖",
+      "formation": "3-5-2",
+      "gw1": 48,
+      "gw2": 116,
+      "gw3": 45,
+      "total": 209
     }
   ],
   "gameweeks": {
@@ -680,14 +680,14 @@
       ]
     },
     "3": {
-      "status": "Official FPL GW3 live data.",
+      "status": "Official FPL GW3 data.",
       "scores": [
         {
           "id": "meta",
           "name": "Meta AI",
           "icon": "🧠",
           "formation": "3-4-3",
-          "points": 54,
+          "points": 69,
           "captain": "Erling Haaland",
           "vice": "Joao Pedro",
           "captain_activated": "Erling Haaland",
@@ -730,16 +730,16 @@
               "minutes": 90
             },
             {
-              "name": "Eberechi Eze",
-              "position": "MID",
-              "points": 0,
-              "minutes": 0
+              "name": "Bobby Thomas",
+              "position": "DEF",
+              "points": 4,
+              "minutes": 90
             },
             {
-              "name": "Carlos Baleba",
-              "position": "MID",
-              "points": 0,
-              "minutes": 0
+              "name": "Nobel Mendy",
+              "position": "DEF",
+              "points": 8,
+              "minutes": 70
             },
             {
               "name": "Erling Haaland",
@@ -754,10 +754,10 @@
               "minutes": 90
             },
             {
-              "name": "Sidiki Cherif",
-              "position": "FWD",
-              "points": 0,
-              "minutes": 0
+              "name": "Elliott Anderson",
+              "position": "MID",
+              "points": 3,
+              "minutes": 90
             }
           ]
         },
@@ -845,7 +845,7 @@
           "name": "Gemini",
           "icon": "♊",
           "formation": "3-5-2",
-          "points": 45,
+          "points": 46,
           "captain": "Erling Haaland",
           "vice": "Bruno Fernandes",
           "captain_activated": "Erling Haaland",
@@ -864,10 +864,10 @@
               "minutes": 90
             },
             {
-              "name": "Cristhian Mosquera",
+              "name": "Jacob Greaves",
               "position": "DEF",
-              "points": 0,
-              "minutes": 0
+              "points": 1,
+              "minutes": 90
             },
             {
               "name": "Harry Maguire",
@@ -924,7 +924,7 @@
           "name": "GPT-5.6 Luna",
           "icon": "🤖",
           "formation": "3-5-2",
-          "points": 41,
+          "points": 45,
           "captain": "Erling Haaland",
           "vice": "Bruno Fernandes",
           "captain_activated": "Erling Haaland",
@@ -979,10 +979,10 @@
               "minutes": 45
             },
             {
-              "name": "Florentino",
-              "position": "MID",
-              "points": 0,
-              "minutes": 0
+              "name": "Bobby Thomas",
+              "position": "DEF",
+              "points": 4,
+              "minutes": 90
             },
             {
               "name": "Erling Haaland",
