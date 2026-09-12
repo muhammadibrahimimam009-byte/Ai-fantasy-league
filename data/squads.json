@@ -1,5 +1,5 @@
 {
-  "current_gameweek": 3,
+  "current_gameweek": 4,
   "gameweeks": {
     "1": {
       "locked": true,
@@ -264,9 +264,6 @@
         "formation": "3-5-2",
         "captain": "Erling Haaland",
         "vice": "Bruno Fernandes",
-        "free_transfers_used": 0,
-        "hit": 0,
-        "chip": "None",
         "starting": [
           ["Antonin Kinsky", "GK"],
           ["Gabriel", "DEF"],
@@ -285,9 +282,11 @@
           ["Cristhian Mosquera", "DEF"],
           ["Bobby Thomas", "DEF"],
           ["Jonah Kusi-Asare", "FWD"]
-        ]
+        ],
+        "free_transfers_used": 0,
+        "hit": 0,
+        "chip": "None"
       },
-
       "meta": {
         "name": "Meta AI",
         "icon": "🧠",
@@ -296,9 +295,6 @@
         "vice": "Joao Pedro",
         "transfer_out": "Jeremy Sarmiento",
         "transfer_in": "Eberechi Eze",
-        "free_transfers_used": 1,
-        "hit": 0,
-        "chip": "None",
         "starting": [
           ["Antonin Kinsky", "GK"],
           ["Gabriel", "DEF"],
@@ -317,18 +313,17 @@
           ["Bobby Thomas", "DEF"],
           ["Nobel Mendy", "DEF"],
           ["Elliott Anderson", "MID"]
-        ]
+        ],
+        "free_transfers_used": 1,
+        "hit": 0,
+        "chip": "None"
       },
-
       "gemini": {
         "name": "Gemini",
         "icon": "♊",
         "formation": "3-5-2",
         "captain": "Erling Haaland",
         "vice": "Bruno Fernandes",
-        "free_transfers_used": 0,
-        "hit": 0,
-        "chip": "None",
         "starting": [
           ["Antonin Kinsky", "GK"],
           ["Gabriel", "DEF"],
@@ -347,18 +342,17 @@
           ["Jacob Greaves", "DEF"],
           ["Bobby Thomas", "DEF"],
           ["Jonah Kusi-Asare", "FWD"]
-        ]
+        ],
+        "free_transfers_used": 0,
+        "hit": 0,
+        "chip": "None"
       },
-
       "grok": {
         "name": "Grok",
         "icon": "🟣",
         "formation": "3-5-2",
         "captain": "Erling Haaland",
         "vice": "Bruno Fernandes",
-        "free_transfers_used": 0,
-        "hit": 0,
-        "chip": "Triple Captain",
         "starting": [
           ["Bart Verbruggen", "GK"],
           ["Riccardo Calafiori", "DEF"],
@@ -377,8 +371,145 @@
           ["Joao Pedro", "FWD"],
           ["Cristhian Mosquera", "DEF"],
           ["Dara O'Shea", "DEF"]
-        ]
+        ],
+        "free_transfers_used": 0,
+        "hit": 0,
+        "chip": "Triple Captain"
+      }
+    },
+
+    "4": {
+      "gpt": {
+        "name": "GPT-5.6 Luna",
+        "icon": "🤖",
+        "formation": "3-5-2",
+        "captain": "Erling Haaland",
+        "vice": "Bruno Fernandes",
+        "transfer_out": "Pascal Gross",
+        "transfer_in": "Vitaly Janelt",
+        "starting": [
+          ["Antonin Kinsky", "GK"],
+          ["Gabriel", "DEF"],
+          ["Harry Maguire", "DEF"],
+          ["Jaka Bijol", "DEF"],
+          ["Bruno Fernandes", "MID"],
+          ["Bryan Mbeumo", "MID"],
+          ["Vitaly Janelt", "MID"],
+          ["Mamadou Sangare", "MID"],
+          ["Florentino", "MID"],
+          ["Erling Haaland", "FWD"],
+          ["Joao Pedro", "FWD"]
+        ],
+        "bench": [
+          ["Bart Verbruggen", "GK"],
+          ["Cristhian Mosquera", "DEF"],
+          ["Bobby Thomas", "DEF"],
+          ["Jonah Kusi-Asare", "FWD"]
+        ],
+        "free_transfers_used": 1,
+        "hit": 0,
+        "chip": "None",
+        "bank": 0.4
+      },
+
+      "meta": {
+        "name": "Meta AI",
+        "icon": "🧠",
+        "formation": "3-4-3",
+        "captain": "Erling Haaland",
+        "vice": "Joao Pedro",
+        "transfer_out": "Sidiki Cherif",
+        "transfer_in": "Liam Delap",
+        "starting": [
+          ["Antonin Kinsky", "GK"],
+          ["Gabriel", "DEF"],
+          ["Harry Maguire", "DEF"],
+          ["Tyrick Mitchell", "DEF"],
+          ["Bruno Fernandes", "MID"],
+          ["Bryan Mbeumo", "MID"],
+          ["Eberechi Eze", "MID"],
+          ["Carlos Baleba", "MID"],
+          ["Erling Haaland", "FWD"],
+          ["Liam Delap", "FWD"],
+          ["Joao Pedro", "FWD"]
+        ],
+        "bench": [
+          ["Mark Flekken", "GK"],
+          ["Bobby Thomas", "DEF"],
+          ["Nobel Mendy", "DEF"],
+          ["Elliott Anderson", "MID"]
+        ],
+        "free_transfers_used": 1,
+        "hit": 0,
+        "chip": "None",
+        "bank": 0.0
+      },
+
+      "gemini": {
+        "name": "Gemini",
+        "icon": "♊",
+        "formation": "3-5-2",
+        "captain": "Erling Haaland",
+        "vice": "Bryan Mbeumo",
+        "starting": [
+          ["Antonin Kinsky", "GK"],
+          ["Gabriel", "DEF"],
+          ["Cristhian Mosquera", "DEF"],
+          ["Harry Maguire", "DEF"],
+          ["Bruno Fernandes", "MID"],
+          ["Bryan Mbeumo", "MID"],
+          ["Christos Tzolis", "MID"],
+          ["Pascal Gross", "MID"],
+          ["Mamadou Sangare", "MID"],
+          ["Erling Haaland", "FWD"],
+          ["Joao Pedro", "FWD"]
+        ],
+        "bench": [
+          ["Martin Dubravka", "GK"],
+          ["Jacob Greaves", "DEF"],
+          ["Bobby Thomas", "DEF"],
+          ["Jonah Kusi-Asare", "FWD"]
+        ],
+        "free_transfers_used": 0,
+        "free_transfers_available": 3,
+        "hit": 0,
+        "chip": "None",
+        "bank": 0.0,
+        "squad_value": 100.0
+      },
+
+      "grok": {
+        "name": "Grok",
+        "icon": "🟣",
+        "formation": "3-4-3",
+        "captain": "Joao Pedro",
+        "vice": "Erling Haaland",
+        "starting": [
+          ["Antonin Kinsky", "GK"],
+          ["Riccardo Calafiori", "DEF"],
+          ["Cristhian Mosquera", "DEF"],
+          ["Kristoffer Ajer", "DEF"],
+          ["Bruno Fernandes", "MID"],
+          ["Bryan Mbeumo", "MID"],
+          ["Dominik Szoboszlai", "MID"],
+          ["Pascal Gross", "MID"],
+          ["Joao Pedro", "FWD"],
+          ["Erling Haaland", "FWD"],
+          ["Dominic Calvert-Lewin", "FWD"]
+        ],
+        "bench": [
+          ["Bart Verbruggen", "GK"],
+          ["Mamadou Sangare", "MID"],
+          ["Luke Shaw", "DEF"],
+          ["Dara O'Shea", "DEF"]
+        ],
+        "free_transfers_used": 0,
+        "free_transfers_available": 3,
+        "hit": 0,
+        "chip": "None",
+        "bank": 0.4,
+        "squad_value": 99.6
       }
     }
   }
-}
+        
