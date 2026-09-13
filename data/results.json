@@ -1,6 +1,6 @@
 {
   "status": "Official FPL GW4 live data.",
-  "updated_at": "2026-09-12T18:25:05.899186+00:00",
+  "updated_at": "2026-09-13T08:01:25.636578+00:00",
   "current_gameweek": 4,
   "leaderboard": [
     {
@@ -11,8 +11,8 @@
       "gw1": 55,
       "gw2": 112,
       "gw3": 53,
-      "gw4": 35,
-      "total": 255
+      "gw4": 41,
+      "total": 261
     },
     {
       "id": "meta",
@@ -22,8 +22,8 @@
       "gw1": 48,
       "gw2": 94,
       "gw3": 69,
-      "gw4": 37,
-      "total": 248
+      "gw4": 47,
+      "total": 258
     },
     {
       "id": "gemini",
@@ -33,8 +33,8 @@
       "gw1": 55,
       "gw2": 115,
       "gw3": 46,
-      "gw4": 23,
-      "total": 239
+      "gw4": 35,
+      "total": 251
     },
     {
       "id": "gpt",
@@ -44,8 +44,8 @@
       "gw1": 48,
       "gw2": 116,
       "gw3": 45,
-      "gw4": 28,
-      "total": 237
+      "gw4": 37,
+      "total": 246
     }
   ],
   "gameweeks": {
@@ -1012,7 +1012,7 @@
           "name": "Meta AI",
           "icon": "🧠",
           "formation": "3-4-3",
-          "points": 37,
+          "points": 47,
           "captain": "Erling Haaland",
           "vice": "Joao Pedro",
           "captain_activated": "Joao Pedro (VC)",
@@ -1027,8 +1027,8 @@
             {
               "name": "Gabriel",
               "position": "DEF",
-              "points": 0,
-              "minutes": 0
+              "points": 9,
+              "minutes": 90
             },
             {
               "name": "Harry Maguire",
@@ -1057,8 +1057,8 @@
             {
               "name": "Eberechi Eze",
               "position": "MID",
-              "points": 0,
-              "minutes": 0
+              "points": 1,
+              "minutes": 9
             },
             {
               "name": "Carlos Baleba",
@@ -1091,7 +1091,7 @@
           "name": "Grok",
           "icon": "🟣",
           "formation": "3-4-3",
-          "points": 35,
+          "points": 41,
           "captain": "Joao Pedro",
           "vice": "Erling Haaland",
           "captain_activated": "Joao Pedro",
@@ -1106,8 +1106,8 @@
             {
               "name": "Riccardo Calafiori",
               "position": "DEF",
-              "points": 0,
-              "minutes": 0
+              "points": 6,
+              "minutes": 90
             },
             {
               "name": "Cristhian Mosquera",
@@ -1170,7 +1170,7 @@
           "name": "GPT-5.6 Luna",
           "icon": "🤖",
           "formation": "3-5-2",
-          "points": 28,
+          "points": 37,
           "captain": "Erling Haaland",
           "vice": "Bruno Fernandes",
           "captain_activated": null,
@@ -1185,8 +1185,8 @@
             {
               "name": "Gabriel",
               "position": "DEF",
-              "points": 0,
-              "minutes": 0
+              "points": 9,
+              "minutes": 90
             },
             {
               "name": "Harry Maguire",
@@ -1249,7 +1249,7 @@
           "name": "Gemini",
           "icon": "♊",
           "formation": "3-5-2",
-          "points": 23,
+          "points": 35,
           "captain": "Erling Haaland",
           "vice": "Bryan Mbeumo",
           "captain_activated": null,
@@ -1264,8 +1264,8 @@
             {
               "name": "Gabriel",
               "position": "DEF",
-              "points": 0,
-              "minutes": 0
+              "points": 9,
+              "minutes": 90
             },
             {
               "name": "Cristhian Mosquera",
@@ -1294,8 +1294,8 @@
             {
               "name": "Christos Tzolis",
               "position": "MID",
-              "points": 0,
-              "minutes": 0
+              "points": 3,
+              "minutes": 80
             },
             {
               "name": "Pascal Gross",
