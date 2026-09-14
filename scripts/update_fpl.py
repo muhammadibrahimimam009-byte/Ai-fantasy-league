@@ -1,534 +1,692 @@
 import json
 import re
 import unicodedata
-from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
+from datetime import datetime, timezone
+from difflib import SequenceMatcher
 
-BASE = "https://fantasy.premierleague.com/api/"
+BASE_URL = "https://fantasy.premierleague.com/api/"
 ROOT = Path(__file__).resolve().parents[1]
 
-POSITION_TYPES = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+POSITION_MAP = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
 
-def get(path):
-    req = Request(BASE + path, headers={"User-Agent": "AI-Fantasy-League/2.0"})
-    with urlopen(req, timeout=30) as r:
-        return json.load(r)
+# ============================================================
+# FPL API
+# ============================================================
+
+def get_api(path):
+    request = Request(
+        BASE_URL + path,
+        headers={
+            "User-Agent": "AI-Fantasy-League/3.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(request, timeout=30) as response:
+        return json.load(response)
 
 
-def norm(s):
-    s = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode().lower()
-    s = re.sub(r"[^a-z0-9]", "", s)
-    aliases = {
-        "antoninkinsky": "antoninkinsky",
-        "cristhianmosquera": "cristhianmosquera",
-        "harrymaguire": "harrymaguire",
-        "tyrickmitchell": "tyrickmitchell",
-        "brunofernandes": "brunofernandes",
-        "bryanmbeumo": "bryanmbeumo",
-        "pascalgross": "pascalgross",
-        "mamadousangare": "mamadousangare",
-        "florentino": "florentino",
-        "erlinghaaland": "erlinghaaland",
-        "joaopedro": "joaopedro",
-        "bartverbruggen": "bartverbruggen",
-        "bobbythomas": "bobbythomas",
-        "jonahkusiasare": "jonahkusiasare",
-        "gabriel": "gabriel",
-        "christostzolis": "christostzolis",
-        "martindubravka": "martindubravka",
-        "jacobgreaves": "jacobgreaves",
-        "carlosbaleba": "carlosbaleba",
-        "elliottanderson": "elliottanderson",
-        "sidikicherif": "sidikicherif",
-        "markflekken": "markflekken",
-        "nobelmendy": "nobelmendy",
-        "jeremysarmiento": "jeremysarmiento",
-        "riccardocalafiori": "riccardocalafiori",
-        "lukeshaw": "lukeshaw",
-        "dominikszoboszlai": "dominikszoboszlai",
-        "dominickcalvertlewin": "dominickcalvertlewin",
-        "kristofferajer": "kristofferajer",
-        "daraoshea": "daraoshea",
-        "vitalyjanelt": "vitalyjanelt",
-        "liamdelap": "liamdelap",
-        "eze": "eze",
-        "eberechieze": "eberechieze",
-    }
-    return aliases.get(s, s)
+# ============================================================
+# NAME NORMALISATION
+# ============================================================
+
+def normalise(value):
+    if value is None:
+        return ""
+    value = unicodedata.normalize("NFKD", str(value))
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    value = value.lower()
+    return re.sub(r"[^a-z0-9]", "", value)
 
 
-def load_squads():
-    return json.loads((ROOT / "data" / "squads.json").read_text(encoding="utf-8"))
+def name_tokens(value):
+    if value is None:
+        return []
+    value = unicodedata.normalize("NFKD", str(value))
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    return re.findall(r"[a-z0-9]+", value.lower())
 
 
-def name_tokens(s):
-    """Return normalized name tokens while preserving token boundaries."""
-    s = unicodedata.normalize("NFKD", str(s)).lower()
-    s = s.replace("ß", "ss")
-    s = s.encode("ascii", "ignore").decode()
-    return re.findall(r"[a-z0-9]+", s)
+# ============================================================
+# PLAYER DATA
+# ============================================================
+
+def fpl_position(player):
+    return POSITION_MAP.get(player.get("element_type"))
 
 
-def initials(token):
-    """Return a compact initials form such as 'b' for 'bruno'."""
-    t = re.sub(r"[^a-z0-9]", "", token.lower())
-    return t[:1] if t else ""
-
-
-def build_index(players):
-    """Build several indexes from official FPL player names.
-
-    FPL's web_name is not guaranteed to equal the human-readable name stored
-    in squads.json. Example: FPL may expose Bruno Fernandes as 'B.Fernandes'.
-    We therefore index web_name, full name, surname, and token combinations.
-    """
-    idx = {
-        "exact": {},
-        "surname": {},
-        "full_tokens": {},
-        "web_tokens": {},
-    }
-
-    for p in players:
-        first = str(p.get("first_name", ""))
-        second = str(p.get("second_name", ""))
-        web = str(p.get("web_name", ""))
-
-        raw_names = [web, f"{first} {second}"]
-        for raw in raw_names:
-            key = norm(raw)
-            if key:
-                bucket = idx["exact"].setdefault(key, [])
-                if not any(existing["id"] == p["id"] for existing in bucket):
-                    bucket.append(p)
-
-        full_toks = name_tokens(f"{first} {second}")
-        web_toks = name_tokens(web)
-        if full_toks:
-            full_bucket = idx["full_tokens"].setdefault(tuple(full_toks), [])
-            if not any(existing["id"] == p["id"] for existing in full_bucket):
-                full_bucket.append(p)
-            surname_bucket = idx["surname"].setdefault(full_toks[-1], [])
-            if not any(existing["id"] == p["id"] for existing in surname_bucket):
-                surname_bucket.append(p)
-        if web_toks:
-            web_bucket = idx["web_tokens"].setdefault(tuple(web_toks), [])
-            if not any(existing["id"] == p["id"] for existing in web_bucket):
-                web_bucket.append(p)
-
-    return idx
-
-
-def find_player(idx, name, expected_pos=None):
-    """Resolve a submitted name to exactly one FPL player.
-
-    expected_pos is used only to break genuine same-name collisions, such as
-    duplicate human-readable names in the FPL player pool. It never changes a
-    player's actual FPL position; it only narrows otherwise-valid candidates.
-    """
-    raw = str(name).strip()
-    key = norm(raw)
-
-    def narrow(candidates):
-        if expected_pos is None:
-            return candidates
-        wanted_type = {v: k for k, v in POSITION_TYPES.items()}.get(expected_pos)
-        if wanted_type is None:
-            raise ValueError(f"Unknown submitted position for {name}: {expected_pos}")
-        filtered = [p for p in candidates if p.get("element_type") == wanted_type]
-        return filtered
-
-    exact_hits = narrow(idx["exact"].get(key, []))
-    if len(exact_hits) == 1:
-        return exact_hits[0]
-    if len(exact_hits) > 1:
-        raise KeyError(f"Ambiguous FPL player name: {name}")
-
-    submitted_tokens = name_tokens(raw)
-    if not submitted_tokens:
-        raise KeyError(f"FPL player not found: {name}")
-
-    # Full token sequence, ignoring punctuation/case/diacritics.
-    full_hits = narrow(idx["full_tokens"].get(tuple(submitted_tokens), []))
-    if len(full_hits) == 1:
-        return full_hits[0]
-    if len(full_hits) > 1:
-        raise KeyError(f"Ambiguous FPL player name: {name}")
-
-    # Common FPL display form: first initial + surname, e.g. B.Fernandes.
-    if len(submitted_tokens) >= 2:
-        sub_surname = submitted_tokens[-1]
-        sub_initial = initials(submitted_tokens[0])
-        candidates = []
-        for p in idx["surname"].get(sub_surname, []):
-            first = name_tokens(p.get("first_name", ""))
-            if first and initials(first[0]) == sub_initial:
-                candidates.append(p)
-        candidates = narrow(candidates)
-        if len(candidates) == 1:
-            return candidates[0]
-        if len(candidates) > 1:
-            raise KeyError(f"Ambiguous FPL player name: {name}")
-
-    # Match a supplied full human-readable name to an abbreviated web_name.
-    # Example: submitted 'Bruno Fernandes'; official web_name 'B.Fernandes'.
-    if len(submitted_tokens) >= 2:
-        surname = submitted_tokens[-1]
-        first = submitted_tokens[0]
-        candidates = []
-        for p in idx["surname"].get(surname, []):
-            p_first = name_tokens(p.get("first_name", ""))
-            p_web = name_tokens(p.get("web_name", ""))
-            if not p_first:
-                continue
-            same_first = p_first[0] == first
-            abbreviated = bool(p_web) and (
-                len(p_web) == 2 and p_web[0] == first[:1] and p_web[-1] == surname
-            )
-            if same_first or abbreviated:
-                candidates.append(p)
-        candidates = narrow(candidates)
-        if len(candidates) == 1:
-            return candidates[0]
-        if len(candidates) > 1:
-            raise KeyError(f"Ambiguous FPL player name: {name}")
-
-    # Surname-only is accepted only when that surname is unique in the FPL API.
-    surname_hits = narrow(idx["surname"].get(submitted_tokens[-1], []))
-    if len(submitted_tokens) == 1 and len(surname_hits) == 1:
-        return surname_hits[0]
-
-    raise KeyError(f"FPL player not found: {name}")
-
-
-def submitted_teams_for_gw(squads_data, gw):
-    """Return only the four manager entries for the requested GW.
-
-    Supports the current structure:
-        {"current_gameweek": 4, "gameweeks": {"1": {...}, "2": {...}}}
-
-    Also supports the older flat structure where manager IDs are at the top level.
-    """
-    gameweeks = squads_data.get("gameweeks")
-    if isinstance(gameweeks, dict):
-        gw_data = gameweeks.get(str(gw), {})
-        if not isinstance(gw_data, dict):
-            return {}
-        managers = {}
-        for sid, team in gw_data.items():
-            if isinstance(team, dict) and "starting" in team and "bench" in team:
-                managers[sid] = team
-        return managers
-
-    # Backward compatibility with the older file format.
-    managers = {}
-    for sid, team in squads_data.items():
-        if isinstance(team, dict) and "starting" in team and "bench" in team:
-            managers[sid] = team
-    return managers
-
-
-def valid_formation(players):
-    """Validate a standard FPL starting XI formation."""
-    if len(players) != 11:
-        return False
-    counts = {"GK": 0, "DEF": 0, "MID": 0, "FWD": 0}
-    for p in players:
-        pos = p["pos"]
-        if pos not in counts:
-            raise ValueError(f"Unknown position in submitted team: {pos}")
-        counts[pos] += 1
+def player_full_name(player):
     return (
-        counts["GK"] == 1
-        and 3 <= counts["DEF"] <= 5
-        and 2 <= counts["MID"] <= 5
-        and 1 <= counts["FWD"] <= 3
+        f"{str(player.get('first_name', '')).strip()} "
+        f"{str(player.get('second_name', '')).strip()}"
+    ).strip()
+
+
+def player_name_variants(player):
+    first = str(player.get("first_name", "")).strip()
+    second = str(player.get("second_name", "")).strip()
+    web = str(player.get("web_name", "")).strip()
+    known = str(player.get("known_name", "")).strip()
+
+    variants = set()
+    for value in (
+        first,
+        second,
+        web,
+        known,
+        f"{first} {second}".strip(),
+        f"{first} {known}".strip(),
+    ):
+        if value:
+            variants.add(value)
+
+    return variants
+
+
+def unique_player(candidates):
+    by_id = {}
+    for player in candidates:
+        by_id[player["id"]] = player
+    return by_id[next(iter(by_id))] if len(by_id) == 1 else None
+
+
+def find_player(players, name, position=None):
+    """Resolve a submitted human name to the current official FPL player list."""
+    target = normalise(name)
+    if not target:
+        raise KeyError("Empty player name supplied")
+
+    candidates = [
+        p for p in players
+        if not position or fpl_position(p) == position
+    ]
+
+    if not candidates:
+        candidates = list(players)
+
+    # 1. Exact full/web/known-name match.
+    exact = []
+    for player in candidates:
+        for variant in player_name_variants(player):
+            if normalise(variant) == target:
+                exact.append(player)
+                break
+    found = unique_player(exact)
+    if found:
+        return found
+
+    # 2. First name + surname match, including FPL display surname.
+    target_parts = name_tokens(name)
+    if len(target_parts) >= 2:
+        first_target = target_parts[0]
+        last_target = target_parts[-1]
+        token_matches = []
+        for player in candidates:
+            first = normalise(player.get("first_name", ""))
+            second = normalise(player.get("second_name", ""))
+            web = normalise(player.get("web_name", ""))
+            if first == first_target and (
+                last_target == second
+                or last_target == web
+                or second.endswith(last_target)
+                or web.endswith(last_target)
+            ):
+                token_matches.append(player)
+        found = unique_player(token_matches)
+        if found:
+            return found
+
+    # 3. Initial + surname: B. Fernandes / B Fernandes.
+    if len(target_parts) >= 2:
+        first_initial = target_parts[0][0]
+        surname = target_parts[-1]
+        initial_matches = []
+        for player in candidates:
+            first = normalise(player.get("first_name", ""))
+            second = normalise(player.get("second_name", ""))
+            web = normalise(player.get("web_name", ""))
+            if first.startswith(first_initial) and surname in {second, web}:
+                initial_matches.append(player)
+        found = unique_player(initial_matches)
+        if found:
+            return found
+
+    # 4. Conservative token scoring.
+    target_set = set(target_parts)
+    scored = []
+    for player in candidates:
+        full_tokens = set(name_tokens(player_full_name(player)))
+        web_tokens = set(name_tokens(player.get("web_name", "")))
+        score = 0
+        score += 50 * len(target_set & full_tokens)
+        score += 35 * len(target_set & web_tokens)
+        full = normalise(player_full_name(player))
+        web = normalise(player.get("web_name", ""))
+        if target and target in full:
+            score += 35
+        if target and target in web:
+            score += 35
+        if target_parts and name_tokens(player_full_name(player)):
+            if target_parts[-1] == name_tokens(player_full_name(player))[-1]:
+                score += 25
+        if score:
+            scored.append((score, player))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    if scored:
+        if len(scored) == 1 or scored[0][0] - scored[1][0] >= 15:
+            return scored[0][1]
+
+    # 5. Very conservative fuzzy fallback.
+    fuzzy = []
+    for player in candidates:
+        ratio = max(
+            (
+                SequenceMatcher(None, target, normalise(variant)).ratio()
+                for variant in player_name_variants(player)
+                if normalise(variant)
+            ),
+            default=0.0,
+        )
+        fuzzy.append((ratio, player))
+
+    fuzzy.sort(key=lambda item: item[0], reverse=True)
+    if fuzzy and fuzzy[0][0] >= 0.90:
+        if len(fuzzy) == 1 or fuzzy[0][0] - fuzzy[1][0] >= 0.04:
+            return fuzzy[0][1]
+
+    raise KeyError(f"FPL player not found: {name} (position={position})")
+
+
+# ============================================================
+# SQUAD / GAMEWEEK STRUCTURE
+# ============================================================
+
+def is_manager_entry(value):
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("starting"), list)
+        and isinstance(value.get("bench"), list)
     )
 
 
-def validate_team_structure(team, refs):
-    """Reject malformed locked submissions before any scoring happens."""
+def get_gameweek_teams(squad_data, gw):
+    gameweeks = squad_data.get("gameweeks", {})
+    if not isinstance(gameweeks, dict):
+        raise RuntimeError("squads.json must contain a 'gameweeks' object.")
+
+    raw = gameweeks.get(str(gw), {})
+    if not isinstance(raw, dict):
+        return {}
+
+    return {
+        manager_id: team
+        for manager_id, team in raw.items()
+        if is_manager_entry(team)
+    }
+
+
+def get_available_squad_gameweeks(squad_data):
+    gameweeks = squad_data.get("gameweeks", {})
+    numbers = []
+    for key, value in gameweeks.items():
+        try:
+            gw = int(key)
+        except (TypeError, ValueError):
+            continue
+        if gw > 0 and isinstance(value, dict):
+            if any(is_manager_entry(v) for v in value.values()):
+                numbers.append(gw)
+    return sorted(set(numbers))
+
+
+# ============================================================
+# VALIDATION
+# ============================================================
+
+def validate_squad(team):
     starting = team.get("starting", [])
     bench = team.get("bench", [])
-    if len(starting) != 11 or len(bench) != 4:
-        raise ValueError("Each manager must have exactly 11 starters and 4 bench players")
+    all_players = starting + bench
 
-    names = [name for name, _ in starting + bench]
-    ids = [p["id"] for p in refs]
-    if len(set(ids)) != 15:
-        raise ValueError("Locked squad contains duplicate players")
+    if len(starting) != 11:
+        raise RuntimeError(f"{team.get('name', 'Team')} must have exactly 11 starters.")
+    if len(bench) != 4:
+        raise RuntimeError(f"{team.get('name', 'Team')} must have exactly 4 bench players.")
 
-    for (name, submitted_pos), player in zip(starting + bench, refs):
-        actual_pos = POSITION_TYPES.get(player.get("element_type"))
-        if actual_pos is None:
-            raise ValueError(f"Unknown FPL position for {name}")
-        if submitted_pos != actual_pos:
-            raise ValueError(
-                f"Position mismatch for {name}: submitted {submitted_pos}, FPL says {actual_pos}"
-            )
+    if len(all_players) != 15:
+        raise RuntimeError(f"{team.get('name', 'Team')} has {len(all_players)} players instead of 15.")
+
+    seen = set()
+    positions = {"GK": 0, "DEF": 0, "MID": 0, "FWD": 0}
+    for name, position in all_players:
+        if position not in positions:
+            raise RuntimeError(f"Invalid position for {name}: {position}")
+        key = normalise(name)
+        if key in seen:
+            raise RuntimeError(f"Duplicate player in {team.get('name', 'Team')}: {name}")
+        seen.add(key)
+        positions[position] += 1
+
+    if positions != {"GK": 2, "DEF": 5, "MID": 5, "FWD": 3}:
+        raise RuntimeError(
+            f"{team.get('name', 'Team')} has invalid squad structure: {positions}"
+        )
 
     if sum(1 for _, pos in starting if pos == "GK") != 1:
-        raise ValueError("Starting XI must contain exactly one goalkeeper")
+        raise RuntimeError("Starting XI must contain exactly one goalkeeper.")
     if sum(1 for _, pos in bench if pos == "GK") != 1:
-        raise ValueError("Bench must contain exactly one goalkeeper")
-    if team.get("captain") not in {name for name, _ in starting}:
-        raise ValueError("Captain must be in the starting XI")
-    if team.get("vice") not in {name for name, _ in starting}:
-        raise ValueError("Vice-captain must be in the starting XI")
-    if team.get("captain") == team.get("vice"):
-        raise ValueError("Captain and vice-captain must be different players")
+        raise RuntimeError("Bench must contain exactly one goalkeeper.")
+
+    starting_gk_index = next(i for i, (_, pos) in enumerate(starting) if pos == "GK")
+    if starting_gk_index != 0:
+        raise RuntimeError("Starting goalkeeper must be the first player in starting order.")
+
+    captain = normalise(team.get("captain", ""))
+    vice = normalise(team.get("vice", ""))
+    starting_names = {normalise(name) for name, _ in starting}
+    if captain not in starting_names:
+        raise RuntimeError(f"Captain is not in the starting XI: {team.get('captain')}")
+    if vice not in starting_names:
+        raise RuntimeError(f"Vice-captain is not in the starting XI: {team.get('vice')}")
+    if captain == vice:
+        raise RuntimeError("Captain and vice-captain must be different players.")
+
+    if not valid_formation([{ "position": pos } for _, pos in starting]):
+        raise RuntimeError(f"Invalid starting formation for {team.get('name', 'Team')}")
 
 
-def played_in_gameweek(live):
-    """FPL considers a player to have played if they appeared OR received a yellow/red card."""
-    minutes = int(live.get("minutes", 0) or 0)
-    yellow = int(live.get("yellow_cards", 0) or 0)
-    red = int(live.get("red_cards", 0) or 0)
+def validate_transfer(previous_team, current_team):
+    previous = {
+        normalise(name): position
+        for name, position in previous_team.get("starting", []) + previous_team.get("bench", [])
+    }
+    current = {
+        normalise(name): position
+        for name, position in current_team.get("starting", []) + current_team.get("bench", [])
+    }
+
+    outgoing = [name for name in previous if name not in current]
+    incoming = [name for name in current if name not in previous]
+
+    declared_out = normalise(current_team.get("transfer_out"))
+    declared_in = normalise(current_team.get("transfer_in"))
+    chip = str(current_team.get("chip", "")).strip().lower().replace("_", " ")
+
+    # A Wildcard/Free Hit can legitimately change more than one player without a hit.
+    if "wildcard" in chip or "free hit" in chip:
+        return
+
+    if len(outgoing) != len(incoming):
+        raise RuntimeError(
+            f"{current_team.get('name')} has an invalid GW transfer: "
+            f"{len(outgoing)} OUT / {len(incoming)} IN."
+        )
+
+    if outgoing:
+        if len(outgoing) == 1:
+            if normalise(outgoing[0]) != declared_out or normalise(incoming[0]) != declared_in:
+                raise RuntimeError(f"{current_team.get('name')} declared transfer does not match squad change.")
+        else:
+            # Multiple-transfer weeks should still have enough metadata to explain them.
+            if not int(current_team.get("free_transfers_used", 0) or 0) and not int(current_team.get("hit", 0) or 0):
+                raise RuntimeError(f"{current_team.get('name')} changed multiple players without transfer metadata.")
+    elif declared_out or declared_in:
+        raise RuntimeError(f"{current_team.get('name')} declares a transfer but the squad did not change.")
+
+    used = int(current_team.get("free_transfers_used", 0) or 0)
+    hit = int(current_team.get("hit", 0) or 0)
+    if used < 0 or hit < 0:
+        raise RuntimeError(f"{current_team.get('name')} has invalid transfer metadata.")
+
+
+# ============================================================
+# GAMEWEEK / MATCH STATUS
+# ============================================================
+
+def player_played(stats):
+    """FPL treatment for substitutions/captaincy: appearance OR yellow/red card counts as played."""
+    minutes = int(stats.get("minutes", 0) or 0)
+    yellow = int(stats.get("yellow_cards", 0) or 0)
+    red = int(stats.get("red_cards", 0) or 0)
     return minutes > 0 or yellow > 0 or red > 0
 
 
-def build_player_record(name_pos, player, live_by_id):
-    name, pos = name_pos
-    if player["id"] not in live_by_id:
-        raise KeyError(f"No live FPL data for {name} (ID {player['id']})")
+def valid_formation(lineup):
+    gk = sum(p["position"] == "GK" for p in lineup)
+    defenders = sum(p["position"] == "DEF" for p in lineup)
+    midfielders = sum(p["position"] == "MID" for p in lineup)
+    forwards = sum(p["position"] == "FWD" for p in lineup)
+
+    return (
+        len(lineup) == 11
+        and gk == 1
+        and 3 <= defenders <= 5
+        and 2 <= midfielders <= 5
+        and 1 <= forwards <= 3
+    )
+
+
+def normalise_chip(value):
+    return str(value or "").strip().lower().replace("_", " ").replace("-", " ")
+
+
+# ============================================================
+# PLAYER LOADING
+# ============================================================
+
+def load_player_strict(players, live, name, position):
+    player = find_player(players, name, position)
+    stats = live.get(player["id"])
+    if stats is None:
+        raise RuntimeError(f"No live FPL data for {name} (ID {player['id']}).")
     return {
         "name": name,
-        "pos": pos,
-        "p": player,
-        "live": live_by_id[player["id"]],
+        "position": position,
+        "official_name": player_full_name(player),
+        "fpl_id": player["id"],
+        "stats": stats,
     }
 
 
-def apply_auto_substitutions(starters, bench):
-    """Apply FPL-style automatic substitutions to a locked starting XI.
-
-    Order:
-      1) Replace a non-playing GK with the replacement GK if that GK played.
-      2) Process non-playing outfield starters in their submitted order.
-         For each, use the highest-priority unused outfield substitute who played
-         and leaves the XI in a valid formation.
-    """
-    current = list(starters)
-    used_bench_indices = set()
-    substitutions = []
-
-    # Goalkeeper substitution: the one bench GK is the replacement GK.
-    starting_gk_index = next((i for i, p in enumerate(current) if p["pos"] == "GK"), None)
-    bench_gk_index = next((i for i, p in enumerate(bench) if p["pos"] == "GK"), None)
-
-    if starting_gk_index is None:
-        raise ValueError("Starting XI has no goalkeeper")
-
-    if not played_in_gameweek(current[starting_gk_index]["live"]):
-        if bench_gk_index is not None and played_in_gameweek(bench[bench_gk_index]["live"]):
-            outgoing = current[starting_gk_index]
-            incoming = bench[bench_gk_index]
-            current[starting_gk_index] = incoming
-            used_bench_indices.add(bench_gk_index)
-            substitutions.append({"out": outgoing["name"], "in": incoming["name"]})
-
-    # Outfield substitutions: original starting order is retained for the
-    # players who failed to play. Bench priority is retained independently.
-    for sidx in range(len(starters)):
-        # Only the original outfield starters can be replaced here.
-        if starters[sidx]["pos"] == "GK":
-            continue
-        if played_in_gameweek(starters[sidx]["live"]):
-            continue
-
-        # A starter that didn't play should currently still occupy this slot.
-        # Search bench from highest priority to lowest, ignoring the GK slot.
-        for bidx, candidate in enumerate(bench):
-            if bidx in used_bench_indices:
-                continue
-            if candidate["pos"] == "GK":
-                continue
-            if not played_in_gameweek(candidate["live"]):
-                continue
-
-            trial = list(current)
-            trial[sidx] = candidate
-            if not valid_formation(trial):
-                continue
-
-            outgoing = current[sidx]
-            current[sidx] = candidate
-            used_bench_indices.add(bidx)
-            substitutions.append({"out": outgoing["name"], "in": candidate["name"]})
-            break
-
-    return current, substitutions
+def try_load_player(players, live, name, position):
+    try:
+        return load_player_strict(players, live, name, position)
+    except Exception as exc:
+        print(f"  ⚠️ Bench player unavailable in current FPL pool: {name} ({exc})")
+        return None
 
 
-def raw_points(record):
-    return int(record["live"].get("total_points", 0) or 0)
+# ============================================================
+# TEAM SCORING
+# ============================================================
 
-
-def score_team(team, idx, live_by_id):
-    starter_pairs = team["starting"]
-    bench_pairs = team["bench"]
-    all_pairs = starter_pairs + bench_pairs
-    refs = [find_player(idx, name, pos) for name, pos in all_pairs]
-    validate_team_structure(team, refs)
-
-    starters = [
-        build_player_record(pair, player, live_by_id)
-        for pair, player in zip(starter_pairs, refs[:11])
-    ]
-    bench = [
-        build_player_record(pair, player, live_by_id)
-        for pair, player in zip(bench_pairs, refs[11:])
+def calculate_team(team, players, live, allow_autosubs):
+    starting = [
+        load_player_strict(players, live, name, position)
+        for name, position in team["starting"]
     ]
 
-    if not valid_formation(starters):
-        raise ValueError("Submitted starting XI is not a valid FPL formation")
+    # Keep bench raw so an old transferred-out bench player cannot break scoring.
+    bench_raw = list(team["bench"])
+    bench_cache = {}
 
-    chip = str(team.get("chip", "") or "").strip().lower()
-    bench_boost = chip in {"bench boost", "bench_boost", "benchboost"}
+    def bench_player(index):
+        if index not in bench_cache:
+            name, position = bench_raw[index]
+            bench_cache[index] = try_load_player(players, live, name, position)
+        return bench_cache[index]
 
-    # Bench Boost: all four bench players score, so no auto-substitution is used.
+    original_starting = list(starting)
+    lineup = list(starting)
+    used_bench = set()
+    auto_subs = []
+
+    chip = normalise_chip(team.get("chip", ""))
+    bench_boost = chip == "bench boost"
+
+    if allow_autosubs and not bench_boost:
+        # Goalkeeper substitution: find the actual bench GK, not blindly bench[0].
+        starting_gk_idx = next(i for i, p in enumerate(lineup) if p["position"] == "GK")
+        bench_gk_idx = next(i for i, (_, pos) in enumerate(bench_raw) if pos == "GK")
+
+        if not player_played(lineup[starting_gk_idx]["stats"]):
+            incoming = bench_player(bench_gk_idx)
+            if incoming is not None and player_played(incoming["stats"]):
+                outgoing = lineup[starting_gk_idx]
+                lineup[starting_gk_idx] = incoming
+                used_bench.add(bench_gk_idx)
+                auto_subs.append({"out": outgoing["name"], "in": incoming["name"]})
+                print(f"  GK auto-sub: {outgoing['name']} -> {incoming['name']}")
+
+        # Outfield substitutions follow bench priority.
+        original_nonplaying = [
+            i for i, p in enumerate(original_starting)
+            if p["position"] != "GK" and not player_played(p["stats"])
+        ]
+
+        for bench_index in range(4):
+            if bench_index in used_bench:
+                continue
+            if bench_raw[bench_index][1] == "GK":
+                continue
+
+            incoming = bench_player(bench_index)
+            if incoming is None or not player_played(incoming["stats"]):
+                continue
+
+            for starter_index in original_nonplaying:
+                # Do not replace a slot that has already been filled by another sub.
+                if lineup[starter_index]["name"] != original_starting[starter_index]["name"]:
+                    continue
+
+                trial = list(lineup)
+                trial[starter_index] = incoming
+                if valid_formation(trial):
+                    outgoing = lineup[starter_index]
+                    lineup[starter_index] = incoming
+                    used_bench.add(bench_index)
+                    auto_subs.append({"out": outgoing["name"], "in": incoming["name"]})
+                    print(f"  Auto-sub: {outgoing['name']} -> {incoming['name']}")
+                    break
+
+    # Base points from the final XI.
+    total = sum(int(p["stats"].get("total_points", 0) or 0) for p in lineup)
+
+    # Bench Boost counts all four bench players as well; no auto-subs are needed for scoring.
     if bench_boost:
-        scoring_players = starters + bench
-        substitutions = []
-    else:
-        scoring_players, substitutions = apply_auto_substitutions(starters, bench)
+        for bench_index in range(4):
+            player = bench_player(bench_index)
+            if player is None:
+                raise RuntimeError(
+                    f"Bench Boost cannot be scored because bench player "
+                    f"'{bench_raw[bench_index][0]}' is unavailable."
+                )
+            total += int(player["stats"].get("total_points", 0) or 0)
 
-    total = sum(raw_points(p) for p in scoring_players)
+    # Captain / vice are ALWAYS evaluated from the original submitted XI.
+    captain = next((p for p in original_starting if normalise(p["name"]) == normalise(team.get("captain", ""))), None)
+    vice = next((p for p in original_starting if normalise(p["name"]) == normalise(team.get("vice", ""))), None)
 
-    # Captaincy is based on the ORIGINAL locked starting XI.
-    # A vice-captain who gets auto-subbed in does NOT inherit the armband.
-    original_by_name = {p["name"]: p for p in starters}
-    cap = original_by_name.get(team.get("captain"))
-    vice = original_by_name.get(team.get("vice"))
+    captain_activated = None
+    if captain is not None and player_played(captain["stats"]):
+        cap_points = int(captain["stats"].get("total_points", 0) or 0)
+        if chip == "triple captain":
+            total += cap_points * 2
+            captain_activated = f"{captain['name']} (TC)"
+        else:
+            total += cap_points
+            captain_activated = captain["name"]
+    elif vice is not None and player_played(vice["stats"]):
+        vice_points = int(vice["stats"].get("total_points", 0) or 0)
+        total += vice_points
+        captain_activated = f"{vice['name']} (VC)"
 
-    captain_multiplier = 1
-    captain_name_used = None
+    # Transfer hit applies after player points, except on Free Hit/Wildcard.
+    hit = int(team.get("hit", 0) or 0)
+    raw_points_before_hit = total
+    if chip not in {"free hit", "wildcard"}:
+        total -= hit
 
-    if cap and played_in_gameweek(cap["live"]):
-        captain_multiplier = 3 if chip in {"triple captain", "triple_captain", "triplecaptain"} else 2
-        captain_name_used = cap["name"]
-        total += raw_points(cap) * (captain_multiplier - 1)
-    elif vice and played_in_gameweek(vice["live"]):
-        captain_multiplier = 2
-        captain_name_used = vice["name"]
-        total += raw_points(vice)
-
-    hit = max(0, int(team.get("hit", team.get("points_hit", 0)) or 0))
-    if chip in {"wildcard", "free hit", "free_hit", "freehit"}:
-        hit = 0
-    total -= hit
+    breakdown = []
+    for p in lineup:
+        breakdown.append({
+            "name": p["name"],
+            "position": p["position"],
+            "points": int(p["stats"].get("total_points", 0) or 0),
+            "minutes": int(p["stats"].get("minutes", 0) or 0),
+        })
 
     return {
         "points": total,
-        "substitutions": substitutions,
-        "captain_doubled_or_tripled": captain_name_used,
-        "captain_multiplier": captain_multiplier if captain_name_used else 1,
-        "points_hit": hit,
-        "scoring_players": [p["name"] for p in scoring_players],
+        "raw_points_before_hit": raw_points_before_hit,
+        "hit": 0 if chip in {"free hit", "wildcard"} else hit,
+        "captain": team.get("captain", ""),
+        "vice": team.get("vice", ""),
+        "captain_activated": captain_activated,
+        "chip": team.get("chip", "None"),
+        "auto_substitutions": auto_subs,
+        "starting": breakdown,
     }
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
-    squads_data = load_squads()
-    boot = get("bootstrap-static/")
-    idx = build_index(boot["elements"])
+    print("\n" + "=" * 58)
+    print("            AI FANTASY LEAGUE — FPL UPDATE")
+    print("=" * 58 + "\n")
+
+    print("Downloading official FPL data...")
+    bootstrap = get_api("bootstrap-static/")
+    players = bootstrap.get("elements", [])
+    events = bootstrap.get("events", [])
+    if not players:
+        raise RuntimeError("Official FPL player data was empty.")
+
+    squads_path = ROOT / "data" / "squads.json"
+    if not squads_path.exists():
+        raise FileNotFoundError(f"squads.json not found: {squads_path}")
+    with squads_path.open("r", encoding="utf-8") as f:
+        squad_data = json.load(f)
+
+    available_gws = get_available_squad_gameweeks(squad_data)
+    if not available_gws:
+        raise RuntimeError("No Gameweek squad submissions were found in squads.json.")
+
+    finished_gws = {
+        int(ev["id"]): ev
+        for ev in events
+        if ev.get("finished") and ev.get("data_checked")
+    }
+
+    target_gws = sorted(gw for gw in available_gws if gw in finished_gws)
+    if not target_gws:
+        raise RuntimeError(
+            "No Gameweek in squads.json is both finished and data-checked by FPL yet."
+        )
+
+    print(f"Locked squad GWs available: {available_gws}")
+    print(f"Finished/data-checked GWs to score: {target_gws}")
 
     history = {}
-    manager_ids = set()
 
-    for event in boot["events"]:
-        gw = int(event["id"])
-        if not event.get("finished") or not event.get("data_checked"):
-            continue
+    # Recalculate every completed locked GW from official FPL data.
+    # This guarantees that fixing the updater also repairs any earlier wrong result.
+    for gw in target_gws:
+        print("\n" + "=" * 58)
+        print(f"GW{gw}")
+        print("=" * 58)
 
-        teams = submitted_teams_for_gw(squads_data, gw)
+        teams = get_gameweek_teams(squad_data, gw)
         if not teams:
             continue
 
-        live = get(f"event/{gw}/live/")
-        live_by_id = {x["id"]: x for x in live["elements"]}
+        for manager_id, team in teams.items():
+            validate_squad(team)
+
+        if gw > 1:
+            previous_teams = get_gameweek_teams(squad_data, gw - 1)
+            for manager_id, team in teams.items():
+                if manager_id in previous_teams:
+                    validate_transfer(previous_teams[manager_id], team)
+
+        print(f"Downloading official GW{gw} live data...")
+        live_data = get_api(f"event/{gw}/live/")
+        live = {item["id"]: item["stats"] for item in live_data.get("elements", [])}
 
         scores = []
-        for sid, team in teams.items():
-            try:
-                result = score_team(team, idx, live_by_id)
-            except Exception as exc:
-                raise RuntimeError(f"GW{gw} manager {sid} ({team.get('name', sid)}) failed validation/scoring: {exc}") from exc
-            manager_ids.add(sid)
+        for manager_id, team in teams.items():
+            print(f"\n{team.get('name', manager_id)}")
+            result = calculate_team(
+                team,
+                players,
+                live,
+                allow_autosubs=True,
+            )
             scores.append({
-                "id": sid,
-                "name": team.get("name", sid),
+                "id": manager_id,
+                "name": team.get("name", manager_id),
                 "icon": team.get("icon", ""),
+                "formation": team.get("formation", ""),
                 "points": result["points"],
-                "captain": team.get("captain"),
-                "vice": team.get("vice"),
-                "formation": team.get("formation"),
-                "chip": team.get("chip"),
-                "points_hit": result["points_hit"],
-                "auto_substitutions": result["substitutions"],
-                "scoring_players": result["scoring_players"],
-                "captain_multiplier": result["captain_multiplier"],
-                "captain_used": result["captain_doubled_or_tripled"],
+                "raw_points_before_hit": result["raw_points_before_hit"],
+                "hit": result["hit"],
+                "captain": result["captain"],
+                "vice": result["vice"],
+                "captain_activated": result["captain_activated"],
+                "chip": result["chip"],
+                "auto_substitutions": result["auto_substitutions"],
+                "starting": result["starting"],
             })
+            print(f"GW{gw} points: {result['points']}")
 
+        scores.sort(key=lambda row: row["points"], reverse=True)
         history[str(gw)] = {
             "status": "Official FPL data marked finished and checked.",
             "scores": scores,
         }
 
-    # Build totals from completed Gameweeks represented in history.
-    totals = {sid: 0 for sid in manager_ids}
+    if not history:
+        raise RuntimeError("No completed Gameweeks could be scored.")
+
+    # Cumulative totals across all completed locked GWs.
+    totals = {}
     for gw_data in history.values():
         for row in gw_data["scores"]:
-            totals[row["id"]] = totals.get(row["id"], 0) + row["points"]
+            totals[row["id"]] = totals.get(row["id"], 0) + int(row["points"])
 
-    # Prefer the latest available GW's metadata for each manager.
-    latest_team = {}
-    if isinstance(squads_data.get("gameweeks"), dict):
-        for gw in sorted(squads_data["gameweeks"].keys(), key=lambda x: int(x)):
-            for sid, team in squads_data["gameweeks"][gw].items():
-                if isinstance(team, dict) and "starting" in team:
-                    latest_team[sid] = team
-    else:
-        latest_team = {
-            sid: team for sid, team in squads_data.items()
-            if isinstance(team, dict) and "starting" in team
-        }
+    latest_gw = max(int(gw) for gw in history)
+    latest_teams = get_gameweek_teams(squad_data, latest_gw)
 
     leaderboard = []
-    for sid, total in totals.items():
-        team = latest_team.get(sid, {})
-        row = {
-            "id": sid,
-            "name": team.get("name", sid),
+    all_manager_ids = set(totals) | set(latest_teams)
+    historical_gws = sorted(int(gw) for gw in history)
+
+    for manager_id in all_manager_ids:
+        team = latest_teams.get(manager_id, {})
+        entry = {
+            "id": manager_id,
+            "name": team.get("name", manager_id),
             "icon": team.get("icon", ""),
-            "formation": team.get("formation"),
-            "captain": team.get("captain"),
-            "total": total,
+            "formation": team.get("formation", ""),
+            "captain": team.get("captain", ""),
+            "vice": team.get("vice", ""),
         }
-        for gw, gw_data in history.items():
-            score = next((x["points"] for x in gw_data["scores"] if x["id"] == sid), None)
-            if score is not None:
-                row[f"gw{gw}"] = score
-        leaderboard.append(row)
+        for gw in historical_gws:
+            points = 0
+            for row in history[str(gw)]["scores"]:
+                if row["id"] == manager_id:
+                    points = int(row["points"])
+                    break
+            entry[f"gw{gw}"] = points
+        entry["total"] = totals.get(manager_id, 0)
+        leaderboard.append(entry)
 
-    leaderboard.sort(key=lambda x: (-x["total"], x["name"]))
-    for rank, row in enumerate(leaderboard, start=1):
-        row["rank"] = rank
+    leaderboard.sort(key=lambda row: row["total"], reverse=True)
 
-    out = {
+    output = {
         "status": "Updated from official FPL data.",
         "updated_at": datetime.now(timezone.utc).isoformat(),
+        "current_gameweek": latest_gw,
         "leaderboard": leaderboard,
         "gameweeks": history,
     }
 
-    (ROOT / "data" / "results.json").write_text(
-        json.dumps(out, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    results_path = ROOT / "data" / "results.json"
+    with results_path.open("w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2, ensure_ascii=False)
+
+    print("\n" + "=" * 58)
+    print("FINAL LEADERBOARD")
+    print("=" * 58)
+    for rank, row in enumerate(leaderboard, 1):
+        print(f"{rank}. {row['icon']} {row['name']} — TOTAL: {row['total']}")
+    print("\nresults.json successfully written.\n")
 
 
 if __name__ == "__main__":
