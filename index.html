@@ -673,6 +673,15 @@ td {
 }
 
 
+.pending {
+
+    color:var(--accent-gold);
+
+    font-weight:800;
+
+}
+
+
 /* =========================================================
    CHIP BADGE
 ========================================================= */
@@ -986,6 +995,8 @@ let results = {};
 
 let currentGW = 1;
 
+let selectedGW = 1;
+
 let activeManager = "gpt";
 
 
@@ -1057,14 +1068,43 @@ async function loadData() {
 
 
         if (
-            !squads.gameweeks
+            !Number.isFinite(currentGW)
             ||
-            !squads.gameweeks[currentGW]
+            currentGW < 1
         ) {
 
             currentGW = 1;
 
         }
+
+
+        if (
+            !squads.gameweeks
+            ||
+            !squads.gameweeks[String(currentGW)]
+        ) {
+
+            const squadGWs =
+                getSquadGameweeks();
+
+            if (squadGWs.length > 0) {
+
+                currentGW =
+                    squadGWs[
+                        squadGWs.length - 1
+                    ];
+
+            }
+
+        }
+
+
+        // ==================================================
+        // DEFAULT SELECTED GAMEWEEK
+        // ==================================================
+
+        selectedGW =
+            currentGW;
 
 
         // ==================================================
@@ -1104,7 +1144,7 @@ async function loadData() {
 
         renderGameweekTabs();
 
-        renderGameweek(currentGW);
+        renderGameweek(selectedGW);
 
         renderManagerTabs();
 
@@ -1158,7 +1198,22 @@ function getCurrentSquads() {
 
     return (
         squads.gameweeks?.[
-            currentGW
+            String(currentGW)
+        ] || {}
+    );
+
+}
+
+
+// ==========================================================
+// GET SQUADS FOR SELECTED GAMEWEEK
+// ==========================================================
+
+function getSelectedSquads() {
+
+    return (
+        squads.gameweeks?.[
+            String(selectedGW)
         ] || {}
     );
 
@@ -1278,10 +1333,43 @@ function getGWScore(
 
 
 // ==========================================================
-// AVAILABLE GAMEWEEKS
+// SQUAD GAMEWEEKS
+//
+// These come from squads.json and therefore include
+// locked Gameweeks even when official FPL points
+// have not been published yet.
 // ==========================================================
 
-function getAvailableGameweeks() {
+function getSquadGameweeks() {
+
+    return Object.keys(
+        squads.gameweeks || {}
+    )
+
+    .map(
+        gw => Number(gw)
+    )
+
+    .filter(
+        gw =>
+            Number.isFinite(gw)
+            &&
+            gw > 0
+    )
+
+    .sort(
+        (a,b) =>
+            a - b
+    );
+
+}
+
+
+// ==========================================================
+// RESULT GAMEWEEKS
+// ==========================================================
+
+function getResultGameweeks() {
 
     return Object.keys(
         results.gameweeks || {}
@@ -1307,11 +1395,41 @@ function getAvailableGameweeks() {
 
 
 // ==========================================================
+// ALL AVAILABLE GAMEWEEKS
+//
+// Union of locked squad GWs + scored GWs.
+//
+// This means GW4 can appear as "pending" before
+// official points are published.
+// ==========================================================
+
+function getAvailableGameweeks() {
+
+    const combined = new Set([
+
+        ...getSquadGameweeks(),
+
+        ...getResultGameweeks()
+
+    ]);
+
+
+    return [...combined].sort(
+        (a,b) =>
+            a - b
+    );
+
+}
+
+
+// ==========================================================
 // LEADERBOARD HEADER
 //
 // Automatically creates:
 //
 // GW1 | GW2 | GW3 | GW4 | TOTAL
+//
+// even when GW4 is still pending.
 // ==========================================================
 
 function renderLeaderboardHeader() {
@@ -1506,11 +1624,21 @@ function renderGameweekTabs() {
 
     tabs.innerHTML =
         available.map(
-            gw => `
+            gw => {
+
+                const hasResult =
+                    Boolean(
+                        results.gameweeks?.[
+                            String(gw)
+                        ]
+                    );
+
+
+                return `
 
 <button
     class="tab ${
-        Number(gw) === currentGW
+        Number(gw) === selectedGW
             ? "active"
             : ""
     }"
@@ -1519,9 +1647,17 @@ function renderGameweekTabs() {
 
 GW${gw}
 
+${
+    hasResult
+        ? ""
+        : " · Pending"
+}
+
 </button>
 
-`
+`;
+
+            }
         )
         .join("");
 
@@ -1534,38 +1670,16 @@ GW${gw}
 
 function renderGameweek(gw) {
 
-    document
-        .querySelectorAll(
-            "#gw-tabs .tab"
-        )
-        .forEach(
-            button => {
-
-                button.classList.remove(
-                    "active"
-                );
+    selectedGW =
+        Number(gw);
 
 
-                if (
-                    button.textContent
-                    .trim()
-                    ===
-                    `GW${gw}`
-                ) {
-
-                    button.classList.add(
-                        "active"
-                    );
-
-                }
-
-            }
-        );
+    renderGameweekTabs();
 
 
     const data =
         results.gameweeks?.[
-            String(gw)
+            String(selectedGW)
         ];
 
 
@@ -1581,8 +1695,40 @@ function renderGameweek(gw) {
         !Array.isArray(data.scores)
     ) {
 
-        container.innerHTML =
-            "<p>No result yet.</p>";
+        container.innerHTML = `
+
+<div class="small">
+
+<strong class="pending">
+
+GW${selectedGW} — OFFICIAL POINTS PENDING
+
+</strong>
+
+<br><br>
+
+The ${selectedGW === currentGW
+    ? "current"
+    : "locked"
+}
+Gameweek squad is available, but official FPL
+player points have not been published and
+finalized in the results yet.
+
+<br><br>
+
+Once the official FPL data is finalized and
+the updater runs, the points will appear here
+automatically.
+
+</div>
+
+`;
+
+
+        renderManagerTabs();
+
+        renderManager();
 
         return;
 
@@ -1604,7 +1750,7 @@ function renderGameweek(gw) {
 <div class="small"
      style="margin-bottom:12px">
 
-GW${gw}
+GW${selectedGW}
 ·
 ${data.status || ""}
 
@@ -1706,6 +1852,11 @@ ${
 
 `;
 
+
+    renderManagerTabs();
+
+    renderManager();
+
 }
 
 
@@ -1722,7 +1873,7 @@ function renderManagerTabs() {
 
 
     const current =
-        getCurrentSquads();
+        getSelectedSquads();
 
 
     const managers =
@@ -1781,7 +1932,7 @@ function selectManager(key) {
 function renderManager() {
 
     const current =
-        getCurrentSquads();
+        getSelectedSquads();
 
 
     const team =
@@ -1796,6 +1947,31 @@ function renderManager() {
         typeof team !== "object"
     ) {
 
+        document.getElementById(
+            "manager-info"
+        ).innerHTML = `
+
+<div class="small">
+
+No squad is available for this manager
+in GW${selectedGW}.
+
+</div>
+
+`;
+
+        document.getElementById(
+            "manager-points"
+        ).innerHTML = "";
+
+        document.getElementById(
+            "pitch"
+        ).innerHTML = "";
+
+        document.getElementById(
+            "bench"
+        ).innerHTML = "";
+
         return;
 
     }
@@ -1804,7 +1980,7 @@ function renderManager() {
     const result =
         getManagerResult(
             activeManager,
-            currentGW
+            selectedGW
         );
 
 
@@ -1836,7 +2012,7 @@ ${team.name || activeManager}
 
 <div class="small">
 
-GW${currentGW}
+GW${selectedGW}
 
 ·
 
@@ -1898,7 +2074,7 @@ ${
 
 <div class="small">
 
-GW${currentGW} Points
+GW${selectedGW} Points
 
 </div>
 
@@ -1920,10 +2096,14 @@ ${points}
 
     // ======================================================
     // PLAYER DATA
+    //
+    // IMPORTANT:
+    // The current Python updater stores player
+    // breakdowns under result.starting.
     // ======================================================
 
     const resultPlayers =
-        result?.players || [];
+        result?.starting || [];
 
 
     const groups = {
@@ -2054,7 +2234,11 @@ ${player.name}
 
 <div class="player-points">
 
-${player.stats.points}
+${
+    result
+        ? player.stats.points
+        : "—"
+}
 
 pts
 
@@ -2170,4 +2354,4 @@ loadData();
 
 </body>
 
-    </html>
+</html>
