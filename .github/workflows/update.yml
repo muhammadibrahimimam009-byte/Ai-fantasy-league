@@ -2,8 +2,14 @@ name: Update AI Fantasy League
 
 on:
   workflow_dispatch:
+
   schedule:
+    # Check several times each day so a newly finalized
+    # Gameweek is picked up automatically.
     - cron: "0 8 * * *"
+    - cron: "0 12 * * *"
+    - cron: "0 16 * * *"
+    - cron: "0 20 * * *"
 
 permissions:
   contents: write
@@ -13,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
