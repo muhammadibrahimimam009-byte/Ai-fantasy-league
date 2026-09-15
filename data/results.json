@@ -1,19 +1,20 @@
 {
   "status": "Updated from official FPL data.",
-  "updated_at": "2026-09-15T08:02:13.269345+00:00",
-  "current_gameweek": 3,
+  "updated_at": "2026-09-15T23:30:15.817039+00:00",
+  "current_gameweek": 4,
   "leaderboard": [
     {
       "id": "grok",
       "name": "Grok",
       "icon": "🟣",
-      "formation": "3-5-2",
-      "captain": "Erling Haaland",
-      "vice": "Bruno Fernandes",
+      "formation": "3-4-3",
+      "captain": "Joao Pedro",
+      "vice": "Erling Haaland",
       "gw1": 55,
       "gw2": 112,
       "gw3": 53,
-      "total": 220
+      "gw4": 82,
+      "total": 302
     },
     {
       "id": "gemini",
@@ -21,11 +22,12 @@
       "icon": "♊",
       "formation": "3-5-2",
       "captain": "Erling Haaland",
-      "vice": "Bruno Fernandes",
+      "vice": "Bryan Mbeumo",
       "gw1": 55,
       "gw2": 115,
       "gw3": 46,
-      "total": 216
+      "gw4": 76,
+      "total": 292
     },
     {
       "id": "meta",
@@ -37,7 +39,8 @@
       "gw1": 48,
       "gw2": 94,
       "gw3": 69,
-      "total": 211
+      "gw4": 58,
+      "total": 269
     },
     {
       "id": "gpt",
@@ -49,7 +52,8 @@
       "gw1": 48,
       "gw2": 116,
       "gw3": 45,
-      "total": 209
+      "gw4": 60,
+      "total": 269
     }
   ],
   "gameweeks": {
@@ -1101,6 +1105,359 @@
               "name": "Joao Pedro",
               "position": "FWD",
               "points": 1,
+              "minutes": 90
+            }
+          ]
+        }
+      ]
+    },
+    "4": {
+      "status": "Official FPL data marked finished and checked.",
+      "scores": [
+        {
+          "id": "grok",
+          "name": "Grok",
+          "icon": "🟣",
+          "formation": "3-4-3",
+          "points": 82,
+          "raw_points_before_hit": 82,
+          "hit": 0,
+          "captain": "Joao Pedro",
+          "vice": "Erling Haaland",
+          "captain_activated": "Joao Pedro",
+          "chip": "None",
+          "auto_substitutions": [
+            {
+              "out": "Cristhian Mosquera",
+              "in": "Dara O'Shea"
+            }
+          ],
+          "starting": [
+            {
+              "name": "Antonin Kinsky",
+              "position": "GK",
+              "points": 7,
+              "minutes": 90
+            },
+            {
+              "name": "Riccardo Calafiori",
+              "position": "DEF",
+              "points": 6,
+              "minutes": 90
+            },
+            {
+              "name": "Dara O'Shea",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Kristoffer Ajer",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Bruno Fernandes",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Bryan Mbeumo",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Dominik Szoboszlai",
+              "position": "MID",
+              "points": 3,
+              "minutes": 90
+            },
+            {
+              "name": "Pascal Gross",
+              "position": "MID",
+              "points": 17,
+              "minutes": 90
+            },
+            {
+              "name": "Joao Pedro",
+              "position": "FWD",
+              "points": 12,
+              "minutes": 90
+            },
+            {
+              "name": "Erling Haaland",
+              "position": "FWD",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Dominic Calvert-Lewin",
+              "position": "FWD",
+              "points": 10,
+              "minutes": 77
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "name": "Gemini",
+          "icon": "♊",
+          "formation": "3-5-2",
+          "points": 76,
+          "raw_points_before_hit": 76,
+          "hit": 0,
+          "captain": "Erling Haaland",
+          "vice": "Bryan Mbeumo",
+          "captain_activated": "Erling Haaland",
+          "chip": "None",
+          "auto_substitutions": [
+            {
+              "out": "Cristhian Mosquera",
+              "in": "Jacob Greaves"
+            }
+          ],
+          "starting": [
+            {
+              "name": "Antonin Kinsky",
+              "position": "GK",
+              "points": 7,
+              "minutes": 90
+            },
+            {
+              "name": "Gabriel",
+              "position": "DEF",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Jacob Greaves",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 87
+            },
+            {
+              "name": "Harry Maguire",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Bruno Fernandes",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Bryan Mbeumo",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Christos Tzolis",
+              "position": "MID",
+              "points": 3,
+              "minutes": 80
+            },
+            {
+              "name": "Pascal Gross",
+              "position": "MID",
+              "points": 17,
+              "minutes": 90
+            },
+            {
+              "name": "Mamadou Sangare",
+              "position": "MID",
+              "points": 4,
+              "minutes": 90
+            },
+            {
+              "name": "Erling Haaland",
+              "position": "FWD",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Joao Pedro",
+              "position": "FWD",
+              "points": 12,
+              "minutes": 90
+            }
+          ]
+        },
+        {
+          "id": "gpt",
+          "name": "GPT-5.6 Luna",
+          "icon": "🤖",
+          "formation": "3-5-2",
+          "points": 60,
+          "raw_points_before_hit": 60,
+          "hit": 0,
+          "captain": "Erling Haaland",
+          "vice": "Bruno Fernandes",
+          "captain_activated": "Erling Haaland",
+          "chip": "None",
+          "auto_substitutions": [
+            {
+              "out": "Jaka Bijol",
+              "in": "Bobby Thomas"
+            }
+          ],
+          "starting": [
+            {
+              "name": "Antonin Kinsky",
+              "position": "GK",
+              "points": 7,
+              "minutes": 90
+            },
+            {
+              "name": "Gabriel",
+              "position": "DEF",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Harry Maguire",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Bobby Thomas",
+              "position": "DEF",
+              "points": 0,
+              "minutes": 90
+            },
+            {
+              "name": "Bruno Fernandes",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Bryan Mbeumo",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Vitaly Janelt",
+              "position": "MID",
+              "points": 4,
+              "minutes": 90
+            },
+            {
+              "name": "Mamadou Sangare",
+              "position": "MID",
+              "points": 4,
+              "minutes": 90
+            },
+            {
+              "name": "Florentino",
+              "position": "MID",
+              "points": 1,
+              "minutes": 13
+            },
+            {
+              "name": "Erling Haaland",
+              "position": "FWD",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Joao Pedro",
+              "position": "FWD",
+              "points": 12,
+              "minutes": 90
+            }
+          ]
+        },
+        {
+          "id": "meta",
+          "name": "Meta AI",
+          "icon": "🧠",
+          "formation": "3-4-3",
+          "points": 58,
+          "raw_points_before_hit": 58,
+          "hit": 0,
+          "captain": "Erling Haaland",
+          "vice": "Joao Pedro",
+          "captain_activated": "Erling Haaland",
+          "chip": "None",
+          "auto_substitutions": [
+            {
+              "out": "Carlos Baleba",
+              "in": "Bobby Thomas"
+            }
+          ],
+          "starting": [
+            {
+              "name": "Antonin Kinsky",
+              "position": "GK",
+              "points": 7,
+              "minutes": 90
+            },
+            {
+              "name": "Gabriel",
+              "position": "DEF",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Harry Maguire",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 90
+            },
+            {
+              "name": "Tyrick Mitchell",
+              "position": "DEF",
+              "points": 1,
+              "minutes": 76
+            },
+            {
+              "name": "Bruno Fernandes",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Bryan Mbeumo",
+              "position": "MID",
+              "points": 2,
+              "minutes": 90
+            },
+            {
+              "name": "Eberechi Eze",
+              "position": "MID",
+              "points": 1,
+              "minutes": 9
+            },
+            {
+              "name": "Bobby Thomas",
+              "position": "DEF",
+              "points": 0,
+              "minutes": 90
+            },
+            {
+              "name": "Erling Haaland",
+              "position": "FWD",
+              "points": 9,
+              "minutes": 90
+            },
+            {
+              "name": "Liam Delap",
+              "position": "FWD",
+              "points": 5,
+              "minutes": 90
+            },
+            {
+              "name": "Joao Pedro",
+              "position": "FWD",
+              "points": 12,
               "minutes": 90
             }
           ]
